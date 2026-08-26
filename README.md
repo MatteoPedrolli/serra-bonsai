@@ -3,6 +3,9 @@
 App di gestione della produzione bonsai: dalla talea alla vendita.
 File statici, nessun backend, dati su IndexedDB. Schema **1.0**.
 
+**In linea: https://matteopedrolli.github.io/serra-bonsai/**
+Dal telefono: aprire il sito in Chrome → *Aggiungi a schermata Home*.
+
 Riferimento: `serra-specifica.md` — se il codice e la specifica non vanno
 d'accordo, ha ragione la specifica. Le scelte del § 11 non si riaprono.
 
