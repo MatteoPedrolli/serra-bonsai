@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Serra — prototipo v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pomice:#E4E2DA; --carta:#FAF9F6; --inchiostro:#191E1A; --fumo:#6C736C;
+  --linea:#CFCEC5; --germoglio:#3F7D20; --germoglio-tenue:#E9F1E2;
+  --ruggine:#9C3B1E; --ruggine-tenue:#F6E7E1; --ambra:#B67B12;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --cond:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
+  font-size:16px;line-height:1.35;overscroll-behavior-y:none}
+.app{max-width:440px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:20;background:var(--pomice);
+  border-bottom:1px solid var(--linea);padding:14px 16px 10px;
+  display:flex;align-items:flex-end;gap:12px}
+.marchio{font-family:var(--cond);font-weight:700;font-size:22px;
+  letter-spacing:.16em;text-transform:uppercase;line-height:1}
+.contatore{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--fumo)}
+.indietro{background:none;border:0;padding:0 4px 0 0;font-family:var(--cond);
+  font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--fumo);cursor:pointer}
+.strumenti{display:flex;gap:8px;padding:12px 16px 4px;align-items:center}
+.cerca{flex:1;border:1px solid var(--linea);background:var(--carta);border-radius:2px;
+  padding:9px 11px;font-family:var(--mono);font-size:14px;color:var(--inchiostro)}
+.cerca:focus{outline:2px solid var(--germoglio);outline-offset:-1px}
+.ordina{border:1px solid var(--linea);background:var(--carta);border-radius:2px;
+  padding:9px 8px;font-family:var(--cond);font-weight:600;font-size:13px;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--inchiostro)}
+.elenco{padding:8px 16px 120px;display:flex;flex-direction:column;gap:1px}
+.riga{display:flex;align-items:center;gap:12px;background:var(--carta);
+  border:1px solid var(--linea);border-radius:2px;padding:11px 12px;
+  cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.riga:active{background:var(--germoglio-tenue)}
+.riga:focus-visible{outline:2px solid var(--germoglio);outline-offset:2px}
+.vaso{flex:none;border:1.5px solid var(--inchiostro);border-radius:1px;
+  display:grid;place-items:center;font-family:var(--mono);font-size:10px;
+  font-weight:600;background:var(--pomice)}
+.vaso.tondo{border-radius:50%}
+.riga .id{flex:1;min-width:0}
+.codice{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:-.01em}
+.sotto{font-family:var(--cond);font-size:12.5px;color:var(--fumo);
+  text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.qta{font-family:var(--mono);font-size:19px;font-weight:600;text-align:right}
+.qta small{display:block;font-family:var(--cond);font-size:10px;font-weight:600;
+  color:var(--fumo);letter-spacing:.1em;text-transform:uppercase}
+.sep{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--fumo);padding:16px 2px 6px;
+  border-bottom:1px solid var(--linea);margin-bottom:7px;
+  display:flex;justify-content:space-between}
+.vuoto{padding:40px 8px;text-align:center;color:var(--fumo);font-size:14.5px}
+.scheda{padding:18px 16px 130px}
+.titolone{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-.02em}
+.specie{font-family:var(--cond);font-size:14px;color:var(--fumo);
+  text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+.cifre{display:flex;gap:1px;margin:18px 0 22px}
+.cifra{flex:1;background:var(--carta);border:1px solid var(--linea);padding:11px 10px}
+.cifra b{display:block;font-family:var(--mono);font-size:21px;font-weight:600}
+.cifra span{font-family:var(--cond);font-size:10.5px;font-weight:600;color:var(--fumo);
+  text-transform:uppercase;letter-spacing:.08em}
+.azioni{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.azione{background:var(--carta);border:1.5px solid var(--inchiostro);border-radius:2px;
+  padding:20px 12px;font-family:var(--cond);font-weight:700;font-size:16px;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;color:inherit;
+  display:flex;flex-direction:column;align-items:flex-start;gap:7px}
+.azione:active{background:var(--germoglio-tenue)}
+.azione i{font-style:normal;font-size:20px;line-height:1}
+.azione u{text-decoration:none;font-family:var(--sans);font-weight:400;
+  font-size:11.5px;text-transform:none;letter-spacing:0;color:var(--fumo)}
+.linkotto{display:inline-flex;align-items:center;gap:6px;margin-top:16px;
+  background:none;border:0;border-bottom:1.5px solid var(--inchiostro);padding:0 0 2px;
+  font-family:var(--cond);font-weight:700;font-size:13px;text-transform:uppercase;
+  letter-spacing:.08em;cursor:pointer;color:inherit}
+.passi{display:flex;gap:4px;padding:12px 16px 0}
+.tacca{height:3px;flex:1;background:var(--linea)}
+.tacca.on{background:var(--germoglio)}
+.corpo{padding:20px 16px 130px}
+.eyebrow{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--fumo)}
+.domanda{font-family:var(--cond);font-size:23px;font-weight:700;letter-spacing:.01em;
+  margin:5px 0 20px;line-height:1.2}
+.conta{display:flex;align-items:center;gap:14px;background:var(--carta);
+  border:1px solid var(--linea);padding:16px;border-radius:2px}
+.conta .att{font-family:var(--cond);font-size:12px;color:var(--fumo);
+  text-transform:uppercase;letter-spacing:.08em}
+.conta .att b{display:block;font-family:var(--mono);font-size:24px;
+  font-weight:600;color:var(--inchiostro)}
+.freccia{color:var(--linea);font-size:20px}
+.numerone{flex:1;font-family:var(--mono);font-size:34px;font-weight:600;text-align:center;
+  border:1.5px solid var(--inchiostro);border-radius:2px;padding:6px 4px;width:100%;
+  background:var(--pomice);color:inherit}
+.numerone:focus{outline:2px solid var(--germoglio);outline-offset:1px}
+.esito{margin-top:10px;padding:11px 13px;border-radius:2px;font-size:14.5px;
+  font-family:var(--cond);font-weight:600;letter-spacing:.02em}
+.esito.perdita{background:var(--ruggine-tenue);color:var(--ruggine)}
+.esito.pari{background:var(--germoglio-tenue);color:var(--germoglio)}
+.passo-tasti{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.mini{background:var(--carta);border:1px solid var(--linea);border-radius:2px;
+  padding:8px 13px;font-family:var(--cond);font-weight:600;font-size:13px;
+  text-transform:uppercase;letter-spacing:.06em;cursor:pointer;color:inherit}
+.mini.on{background:var(--inchiostro);color:var(--carta);border-color:var(--inchiostro)}
+/* smistamento */
+.dasmist{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.dasmist b{font-family:var(--mono);font-size:32px;font-weight:600}
+.dasmist span{font-family:var(--cond);font-size:12px;font-weight:700;color:var(--fumo);
+  text-transform:uppercase;letter-spacing:.1em}
+.dest{display:flex;align-items:center;gap:10px;background:var(--carta);
+  border:1px solid var(--linea);padding:9px 11px;margin-top:8px;border-radius:2px}
+.dest .n{flex:1;font-family:var(--mono);font-size:22px;font-weight:600;text-align:center;
+  border:1px solid var(--linea);border-radius:2px;padding:5px;background:var(--pomice);color:inherit}
+.tondino{width:38px;height:38px;flex:none;border:1px solid var(--linea);
+  background:var(--pomice);border-radius:2px;font-size:19px;cursor:pointer;color:inherit;
+  font-family:var(--mono);line-height:1}
+.resto{margin-top:10px;padding:11px 13px;background:var(--germoglio-tenue);
+  font-size:14px;color:#2C5A16;border-left:3px solid var(--germoglio)}
+.resto.rosso{background:var(--ruggine-tenue);color:var(--ruggine);border-color:var(--ruggine)}
+.scala-eti{display:flex;justify-content:space-between;margin:22px 0 7px}
+.scala{display:flex;align-items:flex-end;gap:6px;overflow-x:auto;padding:6px 2px 12px;
+  scrollbar-width:none}
+.scala::-webkit-scrollbar{display:none}
+.gradino{flex:none;border:1.5px solid var(--inchiostro);background:var(--carta);
+  border-radius:1px;display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:5px;cursor:pointer;color:inherit;font-family:var(--mono);
+  font-size:11px;font-weight:600;position:relative}
+.gradino.tondo{border-radius:50% 50% 12% 12%}
+.gradino.on{background:var(--germoglio);border-color:var(--germoglio);color:#fff}
+.gradino.attuale{border-style:dashed}
+.gradino.attuale::after{content:'ora';position:absolute;top:-15px;font-family:var(--cond);
+  font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--fumo)}
+.ricette{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.mix{background:var(--carta);border:1px solid var(--linea);padding:14px}
+.mixriga{display:flex;align-items:center;gap:10px;padding:7px 0}
+.mixriga+.mixriga{border-top:1px solid var(--linea)}
+.mixriga label{flex:1;font-family:var(--cond);font-size:14.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.05em}
+.mixriga .pz{font-family:var(--mono);font-size:11px;color:var(--fumo);
+  min-width:52px;text-align:right}
+.quota{width:66px;font-family:var(--mono);font-size:17px;font-weight:600;text-align:right;
+  border:1px solid var(--linea);border-radius:2px;padding:7px 8px;
+  background:var(--pomice);color:inherit}
+.quota:focus{outline:2px solid var(--germoglio);outline-offset:-1px}
+.totmix{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;
+  padding-top:11px;border-top:1.5px solid var(--inchiostro);
+  font-family:var(--mono);font-size:15px;font-weight:600}
+.totmix span{font-family:var(--cond);font-size:11px;font-weight:700;color:var(--fumo);
+  text-transform:uppercase;letter-spacing:.1em}
+.duecampi{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.campo label{display:block;font-family:var(--cond);font-size:11px;font-weight:700;
+  color:var(--fumo);text-transform:uppercase;letter-spacing:.09em;margin-bottom:5px}
+.campo input,.campo textarea{width:100%;font-family:var(--mono);font-size:17px;
+  border:1px solid var(--linea);border-radius:2px;padding:10px;
+  background:var(--carta);color:inherit}
+.campo textarea{font-family:var(--sans);font-size:15px;min-height:64px;resize:vertical}
+.campo input:focus,.campo textarea:focus{outline:2px solid var(--germoglio);outline-offset:-1px}
+.avviso{margin-top:14px;padding:11px 13px;background:var(--germoglio-tenue);
+  font-size:13.5px;color:#2C5A16;border-left:3px solid var(--germoglio)}
+.avviso.giallo{background:#FBF2DF;color:#7A5108;border-color:var(--ambra)}
+.registro{background:var(--carta);border:1px solid var(--linea)}
+.voce{display:flex;gap:11px;align-items:baseline;padding:13px 14px}
+.voce+.voce{border-top:1px solid var(--linea)}
+.segno{font-family:var(--mono);font-size:15px;font-weight:600;width:28px;flex:none}
+.segno.meno{color:var(--ruggine)} .segno.piu{color:var(--germoglio)}
+.voce .txt{flex:1;font-size:14.5px}
+.voce .txt b{font-family:var(--mono);font-weight:600}
+.voce .tag{font-family:var(--cond);font-size:10px;font-weight:700;color:var(--fumo);
+  text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:2px}
+/* vista lotto */
+.barretta{display:flex;height:26px;margin:4px 0 14px;border:1px solid var(--inchiostro)}
+.fetta{display:grid;place-items:center;font-family:var(--mono);font-size:10px;
+  color:#fff;overflow:hidden}
+.tabella{background:var(--carta);border:1px solid var(--linea)}
+.trg{display:flex;align-items:center;gap:11px;padding:11px 13px;font-size:14.5px}
+.trg+.trg{border-top:1px solid var(--linea)}
+.trg .et{flex:1;font-family:var(--cond);font-weight:600;text-transform:uppercase;
+  letter-spacing:.05em;font-size:13.5px}
+.trg .vl{font-family:var(--mono);font-weight:600;font-size:16px}
+.pallino{width:11px;height:11px;flex:none;border-radius:2px}
+.barra{position:fixed;bottom:0;left:0;right:0;z-index:30;max-width:440px;margin:0 auto;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top,var(--pomice) 72%,transparent);display:flex;gap:9px}
+.principale{flex:1;background:var(--germoglio);color:#fff;border:0;border-radius:2px;
+  padding:17px;font-family:var(--cond);font-weight:700;font-size:17px;
+  letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.principale:active{background:#356618}
+.principale[disabled]{background:var(--linea);color:var(--fumo);cursor:not-allowed}
+.secondaria{background:var(--carta);border:1.5px solid var(--inchiostro);border-radius:2px;
+  padding:17px 15px;font-family:var(--cond);font-weight:700;font-size:15px;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;color:inherit}
+.brindisi{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:60;
+  background:var(--inchiostro);color:var(--carta);padding:12px 18px;border-radius:2px;
+  font-family:var(--cond);font-weight:600;font-size:14px;letter-spacing:.04em;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:88%}
+.brindisi.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+/* ---------- config ---------- */
+.ingranaggio{background:none;border:0;font-size:20px;cursor:pointer;padding:0 0 0 6px;line-height:1}
+.sezioni{display:flex;gap:6px;padding:12px 16px 2px;overflow-x:auto;scrollbar-width:none}
+.sezioni::-webkit-scrollbar{display:none}
+.cfg{padding:14px 16px 130px}
+.cfgtit{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--fumo);margin:4px 0 8px}
+.cfgriga{display:flex;align-items:center;gap:8px;background:var(--carta);
+  border:1px solid var(--linea);padding:9px 10px;margin-bottom:6px;border-radius:2px}
+.cfgriga.spenta{opacity:.45}
+.cfgriga input[type=text]{flex:1;min-width:0;font-family:var(--cond);font-weight:600;
+  font-size:15px;border:0;background:none;color:inherit;padding:4px 0}
+.cfgriga input[type=number]{width:74px;font-family:var(--mono);font-size:15px;font-weight:600;
+  text-align:right;border:1px solid var(--linea);border-radius:2px;padding:6px 7px;
+  background:var(--pomice);color:inherit}
+.cfgriga input:focus{outline:2px solid var(--germoglio);outline-offset:-1px}
+.cfgriga .um{font-family:var(--mono);font-size:11px;color:var(--fumo);width:34px}
+.interr{width:34px;height:34px;flex:none;border:1px solid var(--linea);background:var(--pomice);
+  border-radius:2px;cursor:pointer;font-size:15px;color:inherit;line-height:1}
+.interr.on{background:var(--germoglio);border-color:var(--germoglio);color:#fff}
+.aggiungi{width:100%;background:none;border:1.5px dashed var(--linea);border-radius:2px;
+  padding:13px;font-family:var(--cond);font-weight:700;font-size:13.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--fumo);cursor:pointer;margin-top:4px}
+.aggiungi:active{border-color:var(--germoglio);color:var(--germoglio)}
+.scelte{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.nota{font-size:13px;color:var(--fumo);margin:10px 2px 16px;line-height:1.45}
+.nascosto{display:none}
+.schermo{animation:entra .22s ease-out}
+@keyframes entra{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button class="indietro nascosto" id="btn-indietro" onclick="indietro()">‹ Indietro</button>
+    <div class="marchio" id="marchio">Serra</div>
+    <div class="contatore" id="contatore"></div>
+    <button class="ingranaggio nascosto" id="btn-cfg" onclick="apriConfig()" title="Configurazione">⚙</button>
+  </header>
+  <main id="main"></main>
+</div>
+<div class="barra nascosto" id="barra"></div>
+<div class="brindisi" id="brindisi"></div>
+
+<script>
+/* ================= CONFIG (modificabile dalla vista ⚙) ================= */
+let CLASSI=[
+  {id:'10T',et:'10 tondo', mm:100,tondo:true, litri:.35, attiva:true},
+  {id:'10Q',et:'10 quadro',mm:100,tondo:false,litri:.45, attiva:true},
+  {id:'12', et:'12',       mm:120,tondo:false,litri:.75, attiva:true},
+  {id:'14', et:'14',       mm:140,tondo:false,litri:1.15,attiva:true},
+  {id:'16', et:'16',       mm:160,tondo:false,litri:1.70,attiva:true},
+  {id:'18', et:'18',       mm:180,tondo:false,litri:2.40,attiva:true},
+  {id:'20', et:'20',       mm:200,tondo:false,litri:3.30,attiva:true},
+  {id:'22', et:'22',       mm:220,tondo:false,litri:4.40,attiva:true},
+  {id:'24', et:'24',       mm:240,tondo:false,litri:5.70,attiva:true},
+];
+let MATERIALI=[
+  {id:'pomice',  nome:'Pomice',        eur:0.45, attivo:true},
+  {id:'seconda', nome:'Terra 2ª mano', eur:0.20, attivo:true},
+  {id:'akadama', nome:'Akadama',       eur:1.20, attivo:true},
+  {id:'kiryu',   nome:'Kiryu',         eur:1.10, attivo:true},
+  {id:'lapillo', nome:'Lapillo',       eur:0.55, attivo:false},
+];
+let RICETTE=[
+  {id:'produzione',nome:'Produzione',  quote:{pomice:60,seconda:30,akadama:10}},
+  {id:'sperim',    nome:'Sperimentale',quote:{pomice:40,seconda:20,akadama:20,kiryu:20}},
+  {id:'libera',    nome:'Libera',      quote:{}},
+];
+/* modelli di intervento */
+let TIPI=[
+  {id:'pot-pul',nome:'Potatura di pulizia', chiede:'ore'},
+  {id:'pot-sti',nome:'Potatura stilistica', chiede:'ore'},
+  {id:'pinz',   nome:'Pinzatura',           chiede:'ore'},
+  {id:'conc',   nome:'Concimazione',        chiede:'scelta',
+    etichetta:'Tipo di concime',
+    opzioni:[{k:'Organico',mat:0.15,ore:0.02},{k:'Chimico',mat:0.10,ore:0.015}]},
+  {id:'leg',    nome:'Legatura',            chiede:'fisso', mat:0.80, ore:0.25},
+  {id:'tratt',  nome:'Trattamento',         chiede:'fisso', mat:0.06, ore:0.01},
+];
+let TARIFFA=25, MOLTIPLICATORE=3;
+
+/* ================= DATI FINTI ================= */
+const LOTTI={
+  'ACE-25-001':{specie:'Acer palmatum',    inserite:120,perse:52,vendute:22},
+  'ACE-24-004':{specie:'Acer buergerianum',inserite:60, perse:29,vendute:12},
+  'PIN-25-003':{specie:'Pinus mugo',       inserite:90, perse:38,vendute:4},
+  'CAR-24-002':{specie:'Carpinus betulus', inserite:75, perse:31,vendute:14},
+  'JUN-23-001':{specie:'Juniperus chinensis',inserite:40,perse:22,vendute:15},
+  'PRU-25-002':{specie:'Prunus mume',      inserite:80, perse:23,vendute:0},
+};
+let GRUPPI=[
+  {id:1,lotto:'ACE-25-001',classe:'10Q',qta:34,lav:1,costo:41.20},
+  {id:2,lotto:'ACE-25-001',classe:'14', qta:12,lav:3,costo:57.60},
+  {id:3,lotto:'PIN-25-003',classe:'12', qta:48,lav:1,costo:52.80},
+  {id:4,lotto:'CAR-24-002',classe:'18', qta:6, lav:5,costo:96.00},
+  {id:5,lotto:'JUN-23-001',classe:'22', qta:3, lav:8,costo:141.00},
+  {id:6,lotto:'ACE-24-004',classe:'16', qta:19,lav:4,costo:129.20},
+  {id:7,lotto:'PRU-25-002',classe:'10T',qta:57,lav:0,costo:22.80},
+  {id:8,lotto:'CAR-24-002',classe:'12', qta:24,lav:2,costo:38.40},
+];
+let prossimoId=9;
+const MOVIMENTI=[],EVENTI=[];
+
+/* ================= STATO ================= */
+let vista='elenco',gruppoAperto=null,lottoAperto=null,flusso=null,passo=0;
+let ordine='vaso',filtro='',ultimaRicetta='produzione',ultimeQuote=null;
+
+/* ================= UTILI ================= */
+const $=id=>document.getElementById(id);
+const cls=c=>CLASSI.find(x=>x.id===c);
+const tipoDi=id=>TIPI.find(t=>t.id===id);
+const matDi=id=>MATERIALI.find(m=>m.id===id)||{nome:id,eur:0,attivo:false};
+const ricDi=id=>RICETTE.find(r=>r.id===id)||RICETTE[0];
+const eur=n=>(+n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const num=n=>(+n||0).toLocaleString('it-IT',{maximumFractionDigits:2});
+const perPianta=g=>g.qta>0?g.costo/g.qta:0;
+const idx=c=>CLASSI.findIndex(x=>x.id===c);
+function brindisi(t){const b=$('brindisi');b.textContent=t;b.classList.add('on');
+  clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),2600);}
+function dim(c,base){return Math.round(base*(cls(c).mm/240)*.62+base*.38);}
+function totLotto(l){return GRUPPI.filter(g=>g.lotto===l).reduce((s,g)=>s+g.qta,0);}
+
+/* ================= ELENCO ================= */
+function vistaElenco(){
+  vista='elenco';gruppoAperto=null;lottoAperto=null;flusso=null;
+  $('btn-indietro').classList.add('nascosto');
+  $('btn-cfg').classList.remove('nascosto');
+  $('marchio').textContent='Serra';
+  $('contatore').textContent=GRUPPI.length+' gruppi · '+GRUPPI.reduce((s,g)=>s+g.qta,0)+' piante';
+  $('barra').classList.add('nascosto');
+  let lista=GRUPPI.filter(g=>(g.lotto+' '+LOTTI[g.lotto].specie+' '+g.classe)
+    .toLowerCase().includes(filtro.toLowerCase()));
+  if(ordine==='vaso') lista.sort((a,b)=>idx(a.classe)-idx(b.classe)||a.lotto.localeCompare(b.lotto));
+  if(ordine==='lotto')lista.sort((a,b)=>a.lotto.localeCompare(b.lotto)||idx(a.classe)-idx(b.classe));
+  if(ordine==='qta')  lista.sort((a,b)=>b.qta-a.qta);
+
+  let h=`<div class="strumenti">
+    <input class="cerca" id="cerca" placeholder="lotto o specie…" value="${filtro}">
+    <select class="ordina" id="ord">
+      <option value="vaso"${ordine==='vaso'?' selected':''}>Vaso</option>
+      <option value="lotto"${ordine==='lotto'?' selected':''}>Lotto</option>
+      <option value="qta"${ordine==='qta'?' selected':''}>Quantità</option>
+    </select></div><div class="elenco">`;
+  if(!lista.length) h+=`<div class="vuoto">Nessun gruppo con questo filtro.</div>`;
+  let ultima=null;
+  lista.forEach(g=>{
+    if(ordine==='vaso'&&g.classe!==ultima){ultima=g.classe;
+      const n=lista.filter(x=>x.classe===g.classe).reduce((s,x)=>s+x.qta,0);
+      h+=`<div class="sep"><span>Vaso ${cls(g.classe).et}</span><span>${n} piante</span></div>`;}
+    if(ordine==='lotto'&&g.lotto!==ultima){ultima=g.lotto;
+      h+=`<div class="sep"><span>${g.lotto}</span><span>${totLotto(g.lotto)} piante in tutto</span></div>`;}
+    const d=dim(g.classe,38);
+    h+=`<button class="riga" onclick="apriGruppo(${g.id})">
+      <span class="vaso ${cls(g.classe).tondo?'tondo':''}" style="width:${d}px;height:${d}px">${g.classe}</span>
+      <span class="id"><span class="codice">${g.lotto}</span>
+        <span class="sotto">${LOTTI[g.lotto].specie} · ${g.lav} lav.</span></span>
+      <span class="qta">${g.qta}<small>piante</small></span></button>`;
+  });
+  $('main').className='schermo';$('main').innerHTML=h+'</div>';
+  $('cerca').oninput=e=>{filtro=e.target.value;const p=e.target.selectionStart;
+    vistaElenco();const n=$('cerca');n.focus();n.setSelectionRange(p,p);};
+  $('ord').onchange=e=>{ordine=e.target.value;vistaElenco();};
+}
+
+/* ================= SCHEDA GRUPPO ================= */
+function apriGruppo(id){
+  gruppoAperto=GRUPPI.find(g=>g.id===id);vista='gruppo';
+  $('btn-indietro').classList.remove('nascosto');
+  $('btn-cfg').classList.add('nascosto');$('marchio').textContent='Gruppo';$('contatore').textContent='';
+  $('barra').classList.add('nascosto');
+  const g=gruppoAperto,d=dim(g.classe,58);
+  $('main').className='schermo';
+  $('main').innerHTML=`<div class="scheda">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="vaso ${cls(g.classe).tondo?'tondo':''}" style="width:${d}px;height:${d}px;font-size:13px">${g.classe}</span>
+      <div><div class="titolone">${g.lotto}</div>
+      <div class="specie">${LOTTI[g.lotto].specie} · vaso ${cls(g.classe).et}</div></div></div>
+    <div class="cifre">
+      <div class="cifra"><b>${g.qta}</b><span>in questo vaso</span></div>
+      <div class="cifra"><b>${g.lav}</b><span>lavorazioni</span></div>
+      <div class="cifra"><b>${eur(perPianta(g))}</b><span>costo/pianta</span></div></div>
+    <div class="azioni">
+      <button class="azione" onclick="avvia('rinvaso')"><i>🪴</i>Rinvaso<u>conta, smista, registra</u></button>
+      <button class="azione" onclick="avvia('conteggio')"><i>🔢</i>Conteggio<u>aggiorna la giacenza</u></button>
+      <button class="azione" onclick="avvia('vendita')"><i>💰</i>Vendita<u>quantità e prezzo</u></button>
+      <button class="azione" onclick="avvia('intervento')"><i>✂️</i>Intervento<u>potatura, concime, filo…</u></button></div>
+    <button class="linkotto" onclick="apriLotto('${g.lotto}')">Vedi tutto il lotto ›</button>
+  </div>`;
+}
+
+/* ================= VISTA LOTTO ================= */
+function apriLotto(codice){
+  lottoAperto=codice;vista='lotto';
+  $('btn-indietro').classList.remove('nascosto');
+  $('btn-cfg').classList.add('nascosto');$('marchio').textContent='Lotto';$('contatore').textContent='';
+  $('barra').classList.add('nascosto');
+  const L=LOTTI[codice],gr=GRUPPI.filter(g=>g.lotto===codice).sort((a,b)=>idx(a.classe)-idx(b.classe));
+  const vive=gr.reduce((s,g)=>s+g.qta,0);
+  const costo=gr.reduce((s,g)=>s+g.costo,0);
+  const tot=Math.max(L.inserite,vive+L.perse+L.vendute);
+  const col=['#3F7D20','#5B9A38','#7CB55B','#9CCF83','#BCE3AA'];
+  let barre='';
+  gr.forEach((g,i)=>{barre+=`<div class="fetta" style="flex:${g.qta};background:${col[i%col.length]}"
+    title="${g.classe}">${g.qta/tot>.07?g.classe:''}</div>`;});
+  barre+=`<div class="fetta" style="flex:${L.vendute};background:var(--fumo)"></div>`;
+  barre+=`<div class="fetta" style="flex:${L.perse};background:var(--ruggine-tenue);color:var(--ruggine)"></div>`;
+  let righe='';
+  gr.forEach((g,i)=>{righe+=`<div class="trg"><span class="pallino" style="background:${col[i%col.length]}"></span>
+    <span class="et">Vaso ${cls(g.classe).et}</span>
+    <span class="vl">${g.qta}</span></div>`;});
+  righe+=`<div class="trg"><span class="pallino" style="background:var(--fumo)"></span>
+    <span class="et">Vendute</span><span class="vl">${L.vendute}</span></div>`;
+  righe+=`<div class="trg"><span class="pallino" style="background:var(--ruggine)"></span>
+    <span class="et">Perse</span><span class="vl">${L.perse}</span></div>`;
+  $('main').className='schermo';
+  $('main').innerHTML=`<div class="scheda">
+    <div class="titolone">${codice}</div>
+    <div class="specie">${L.specie}</div>
+    <div class="cifre">
+      <div class="cifra"><b>${L.inserite}</b><span>inserite</span></div>
+      <div class="cifra"><b>${vive}</b><span>oggi</span></div>
+      <div class="cifra"><b>${Math.round(vive/L.inserite*100)}%</b><span>sopravvivenza</span></div></div>
+    <div class="eyebrow">dove sono finite</div>
+    <div class="barretta">${barre}</div>
+    <div class="tabella">${righe}</div>
+    <div class="avviso">Costo accumulato sul lotto: <b>${eur(costo)}</b> ·
+      media <b>${eur(vive?costo/vive:0)}</b> a pianta viva.</div>
+    <button class="linkotto" onclick="vistaElenco()">Torna alla serra ›</button></div>`;
+}
+
+/* ================= FLUSSI ================= */
+const PASSI={rinvaso:4,conteggio:2,vendita:2,intervento:2};
+const TITOLI={rinvaso:'Rinvaso',conteggio:'Conteggio',vendita:'Vendita',intervento:'Intervento'};
+
+function avvia(tipo){
+  const g=gruppoAperto;
+  flusso={tipo,contate:g.qta,dest:{},vaso:0,ore:0,note:'',prezzo:0,vend:g.qta,
+    ricetta:ultimaRicetta,quote:{...(ultimeQuote||ricDi(ultimaRicetta).quote)},
+    tipoInt:'pot-pul',scelta:'Organico',oreTocco:false,matTocco:false};
+  if(tipo==='rinvaso') flusso.dest[prossimaClasse(g.classe)]=g.qta;
+  passo=1;vista='flusso';disegnaPasso();
+}
+const prossimaClasse=c=>CLASSI[Math.min(idx(c)+1,CLASSI.length-1)].id;
+const smistate=()=>Object.values(flusso.dest).reduce((s,n)=>s+n,0);
+const resto=()=>flusso.contate-smistate();
+
+function disegnaPasso(){
+  $('btn-indietro').classList.remove('nascosto');
+  $('btn-cfg').classList.add('nascosto');
+  $('marchio').textContent=TITOLI[flusso.tipo];
+  $('contatore').textContent=`passo ${passo}/${PASSI[flusso.tipo]}`;
+  let t='<div class="passi">';
+  for(let i=1;i<=PASSI[flusso.tipo];i++) t+=`<div class="tacca ${i<=passo?'on':''}"></div>`;
+  t+='</div>';
+  const f={rinvaso:passoRinvaso,conteggio:passoConteggio,
+    vendita:passoVendita,intervento:passoIntervento}[flusso.tipo];
+  $('main').className='schermo';
+  $('main').innerHTML=t+'<div class="corpo">'+f()+'</div>';
+  $('barra').classList.remove('nascosto');
+  const c=$('i-contate'); if(c) c.onchange=e=>setConta(+e.target.value||0);
+}
+
+/* --- conteggio riusabile --- */
+function bloccoConta(){
+  const g=gruppoAperto,d=flusso.contate-g.qta;
+  const esito=d<0?`<div class="esito perdita">− ${-d} perdita · registrata da sola</div>`
+    :d>0?`<div class="esito perdita">+ ${d} in più delle attese · verifica</div>`
+    :`<div class="esito pari">Nessuna perdita</div>`;
+  return `<div class="eyebrow">Passo ${passo} — quante ce ne sono</div>
+    <div class="domanda">Contale davvero,<br>prima di toccarle.</div>
+    <div class="conta"><div class="att">attese<b>${g.qta}</b></div><div class="freccia">›</div>
+      <input class="numerone" id="i-contate" type="number" inputmode="numeric" min="0" value="${flusso.contate}"></div>
+    ${esito}
+    <div class="passo-tasti">
+      <button class="mini" onclick="setConta(${g.qta})">tutte ${g.qta}</button>
+      <button class="mini" onclick="setConta(${Math.max(0,flusso.contate-1)})">−1</button>
+      <button class="mini" onclick="setConta(${flusso.contate+1})">+1</button></div>`;
+}
+function setConta(v){
+  flusso.contate=Math.max(0,v);
+  if(flusso.tipo==='rinvaso'){
+    const k=Object.keys(flusso.dest);
+    if(k.length===1) flusso.dest[k[0]]=Math.min(flusso.dest[k[0]],flusso.contate);
+    while(resto()<0){const u=Object.keys(flusso.dest).pop();
+      flusso.dest[u]=Math.max(0,flusso.dest[u]+resto());if(flusso.dest[u]===0)delete flusso.dest[u];}
+  }
+  disegnaPasso();
+}
+
+/* --- rinvaso --- */
+function passoRinvaso(){
+  const g=gruppoAperto;
+  if(passo===1){barraTasti('Avanti',()=>{passo=2;disegnaPasso();});return bloccoConta();}
+
+  if(passo===2){
+    barraTasti('Avanti',()=>{passo=3;disegnaPasso();},null,null,smistate()>0&&resto()>=0);
+    let righe='';
+    Object.entries(flusso.dest).forEach(([c,n])=>{
+      const d=dim(c,40);
+      righe+=`<div class="dest">
+        <span class="vaso ${cls(c).tondo?'tondo':''}" style="width:${d}px;height:${d}px">${c}</span>
+        <button class="tondino" onclick="addDest('${c}',-1)">−</button>
+        <input class="n" type="number" inputmode="numeric" min="0" value="${n}"
+          onchange="setDest('${c}',+this.value||0)">
+        <button class="tondino" onclick="addDest('${c}',1)">+</button>
+        <button class="tondino" onclick="togliDest('${c}')">×</button></div>`;
+    });
+    let scala='<div class="scala">';
+    CLASSI.filter(c=>c.attiva||flusso.dest[c.id]!==undefined).forEach(c=>{const w=dim(c.id,54);
+      scala+=`<button class="gradino ${c.tondo?'tondo':''} ${flusso.dest[c.id]!==undefined?'on':''} ${c.id===g.classe?'attuale':''}"
+        style="width:${w}px;height:${w}px" onclick="nuovaDest('${c.id}')">${c.id}</button>`;});
+    scala+='</div>';
+    const r=resto();
+    return `<div class="eyebrow">Passo 2 — smistamento</div>
+      <div class="domanda">Le grandi da una parte,<br>le piccole restano.</div>
+      <div class="dasmist"><b>${flusso.contate}</b><span>piante contate</span></div>
+      ${righe||'<div class="vuoto">Tocca una classe di vaso qui sotto.</div>'}
+      ${r>0?`<div class="resto"><b>${r}</b> restano in vaso ${cls(g.classe).et}.</div>`
+        :r<0?`<div class="resto rosso">Ne hai smistate ${-r} più di quante ne hai contate.</div>`
+        :`<div class="resto">Il gruppo ${g.classe} si chiude: passano tutte.</div>`}
+      <div class="scala-eti"><span class="eyebrow">aggiungi destinazione</span>
+        <span class="eyebrow">tocca una classe</span></div>${scala}`;
+  }
+
+  if(passo===3){
+    barraTasti('Avanti',()=>{passo=4;disegnaPasso();});
+    const litriTot=Object.entries(flusso.dest).reduce((s,[c,n])=>s+n*cls(c).litri,0);
+    const ids=Object.keys(flusso.quote);
+    const somma=ids.reduce((s,k)=>s+(flusso.quote[k]||0),0)||1;
+    let righe='',costoT=0;
+    ids.forEach(k=>{
+      const m=matDi(k),L=litriTot*(flusso.quote[k]||0)/somma,c=L*m.eur;costoT+=c;
+      righe+=`<div class="mixriga"><label for="q-${k}">${m.nome}</label>
+        <span class="pz">${num(L)} L</span>
+        <input class="quota" id="q-${k}" type="number" step="5" min="0" value="${num(flusso.quote[k]||0)}"
+          onchange="setQuota('${k}',this.value)">
+        <button class="tondino" onclick="togliMat('${k}')" title="togli">×</button></div>`;
+    });
+    const disponibili=MATERIALI.filter(m=>m.attivo&&flusso.quote[m.id]===undefined);
+    const aggiunte=disponibili.length?`<div class="passo-tasti">${disponibili.map(m=>
+      `<button class="mini" onclick="aggMat('${m.id}')">+ ${m.nome}</button>`).join('')}</div>`:'';
+    const bott=RICETTE.map(r=>
+      `<button class="mini ${flusso.ricetta===r.id?'on':''}" onclick="setRicetta('${r.id}')">${r.nome}</button>`).join('');
+    const vasi=Object.entries(flusso.dest).map(([c,n])=>`${n}×${c}`).join(' + ');
+    return `<div class="eyebrow">Passo 3 — substrato e ore</div>
+      <div class="domanda">Quello che hai messo<br>oggi, non il preset.</div>
+      <div class="ricette">${bott}</div>
+      <div class="mix">${righe||'<div class="vuoto" style="padding:14px">Nessun materiale in questa miscela.</div>'}
+        <div class="totmix"><span>${vasi} · ${num(litriTot)} L</span><b>${eur(costoT)}</b></div></div>
+      ${aggiunte}
+      <div class="passo-tasti"><button class="mini" onclick="salvaRicetta()">salva come miscela</button></div>
+      ${ricDi(flusso.ricetta).sperimentale?`<div class="avviso">Nasce una variante <b>Substrato = Sperimentale</b> sui gruppi di destinazione. La chiuderai a un conteggio successivo.</div>`:''}
+      <div class="duecampi">
+        <div class="campo"><label for="i-vaso">Vasi e altro €</label>
+          <input id="i-vaso" type="number" step="0.10" inputmode="decimal" value="${num(flusso.vaso)}"
+            onchange="flusso.vaso=+this.value||0;disegnaPasso()"></div>
+        <div class="campo"><label for="i-ore">Ore</label>
+          <input id="i-ore" type="number" step="0.25" inputmode="decimal" value="${num(flusso.ore)}"
+            onchange="flusso.ore=+this.value||0;disegnaPasso()"></div></div>`;
+  }
+
+  /* conferma */
+  const d=flusso.contate-g.qta,n=smistate(),r=resto();
+  const litriTot=Object.entries(flusso.dest).reduce((s,[c,q])=>s+q*cls(c).litri,0);
+  const kk=Object.keys(flusso.quote);
+  const somma=kk.reduce((s,k)=>s+(flusso.quote[k]||0),0)||1;
+  const costoSub=kk.reduce((s,k)=>s+litriTot*(flusso.quote[k]||0)/somma*matDi(k).eur,0);
+  const costoOp=costoSub+flusso.vaso+flusso.ore*TARIFFA;
+  const quotaTot=flusso.contate>0?g.costo*(n/flusso.contate):0;
+  let voci='';
+  if(d!==0) voci+=voce(d<0?'meno':'piu',(d<0?'−':'+')+Math.abs(d),d<0?'Perdita':'Rettifica',
+    `${Math.abs(d)} piante su ${g.lotto} · ${g.classe}`);
+  Object.entries(flusso.dest).forEach(([c,q])=>{
+    voci+=voce('','↔','Trasferimento',`<b>${q}</b> piante da <b>${g.classe}</b> a <b>${c}</b>`);});
+  voci+=voce('','●','Intervento',
+    `Rinvaso · ${eur(costoSub)} substrato + ${eur(flusso.vaso)} vasi · ${num(flusso.ore)} h (${eur(flusso.ore*TARIFFA)})`);
+  if(r>0) voci+=voce('','=','Resta',`<b>${r}</b> piante in vaso ${g.classe}`);
+  barraTasti('Salva',()=>salva(false),'Salva e ripeti',()=>salva(true));
+  return `<div class="eyebrow">Passo 4 — conferma</div>
+    <div class="domanda">Ecco cosa<br>viene scritto.</div>
+    <div class="registro">${voci}</div>
+    <div class="avviso">Costo a pianta dopo il rinvaso: <b>${eur(n?(quotaTot+costoOp)/n:0)}</b> ·
+      prezzo suggerito ×${MOLTIPLICATORE}: <b>${eur(n?(quotaTot+costoOp)/n*MOLTIPLICATORE:0)}</b>.</div>`;
+}
+function voce(s,sim,tag,txt){return `<div class="voce"><span class="segno ${s}">${sim}</span>
+  <span class="txt"><span class="tag">${tag}</span>${txt}</span></div>`;}
+function nuovaDest(c){
+  if(flusso.dest[c]!==undefined){delete flusso.dest[c];disegnaPasso();return;}
+  flusso.dest[c]=Math.max(0,resto());disegnaPasso();
+}
+function setDest(c,v){flusso.dest[c]=Math.max(0,v);disegnaPasso();}
+function addDest(c,d){flusso.dest[c]=Math.max(0,flusso.dest[c]+d);disegnaPasso();}
+function togliDest(c){delete flusso.dest[c];disegnaPasso();}
+function setRicetta(k){flusso.ricetta=k;flusso.quote={...ricDi(k).quote};disegnaPasso();}
+function aggMat(id){flusso.quote[id]=0;disegnaPasso();}
+function togliMat(id){delete flusso.quote[id];disegnaPasso();}
+function salvaRicetta(){
+  const n=RICETTE.length+1,id='mix'+Date.now();
+  RICETTE.push({id,nome:'Miscela '+n,quote:{...flusso.quote}});
+  flusso.ricetta=id;brindisi('Salvata come Miscela '+n+' — rinominala in ⚙');disegnaPasso();
+}
+function setQuota(id,v){flusso.quote[id]=Math.max(0,+v||0);disegnaPasso();}
+
+/* --- conteggio --- */
+function passoConteggio(){
+  if(passo===1){barraTasti('Avanti',()=>{passo=2;disegnaPasso();});return bloccoConta();}
+  const g=gruppoAperto,d=flusso.contate-g.qta;
+  barraTasti('Salva',()=>salva(false));
+  return `<div class="eyebrow">Passo 2 — conferma</div>
+    <div class="domanda">Ecco cosa<br>viene scritto.</div>
+    <div class="registro">${d===0
+      ? voce('','=','Nessun movimento',`Giacenza confermata a <b>${g.qta}</b> piante`)
+      : voce(d<0?'meno':'piu',(d<0?'−':'+')+Math.abs(d),d<0?'Perdita':'Rettifica',
+        `${Math.abs(d)} piante su ${g.lotto} · ${g.classe}`)}</div>
+    ${d<0?`<div class="avviso giallo">Il costo per pianta sale da <b>${eur(perPianta(g))}</b>
+      a <b>${eur(flusso.contate>0?g.costo/flusso.contate:0)}</b>.</div>`:''}`;
+}
+
+/* --- vendita --- */
+function passoVendita(){
+  const g=gruppoAperto;
+  if(passo===1){
+    barraTasti('Avanti',()=>{passo=2;disegnaPasso();},null,null,flusso.vend>0&&flusso.prezzo>0);
+    const sugg=perPianta(g)*MOLTIPLICATORE;
+    return `<div class="eyebrow">Passo 1 — quante e a quanto</div>
+      <div class="domanda">La vendita<br>si registra subito.</div>
+      <div class="conta">
+        <input class="numerone" type="number" inputmode="numeric" min="1" max="${g.qta}" value="${flusso.vend}"
+          onchange="flusso.vend=Math.max(0,Math.min(${g.qta},+this.value||0));disegnaPasso()">
+        <div class="att">di<b>${g.qta}</b></div></div>
+      <div class="duecampi">
+        <div class="campo"><label for="i-prezzo">Prezzo a pianta €</label>
+          <input id="i-prezzo" type="number" step="0.50" inputmode="decimal" value="${num(flusso.prezzo)}"
+            onchange="flusso.prezzo=+this.value||0;disegnaPasso()"></div>
+        <div class="campo"><label>Costo a pianta</label>
+          <input value="${eur(perPianta(g))}" readonly></div></div>
+      <div class="passo-tasti"><button class="mini" onclick="flusso.prezzo=${sugg.toFixed(2)};disegnaPasso()">
+        suggerito ${eur(sugg)}</button></div>
+      ${flusso.prezzo>0&&flusso.prezzo<perPianta(g)
+        ?`<div class="avviso giallo">Sotto costo di <b>${eur(perPianta(g)-flusso.prezzo)}</b> a pianta.</div>`:''}`;
+  }
+  const inc=flusso.vend*flusso.prezzo,cst=flusso.vend*perPianta(g);
+  barraTasti('Salva',()=>salva(false));
+  return `<div class="eyebrow">Passo 2 — conferma</div>
+    <div class="domanda">Ecco cosa<br>viene scritto.</div>
+    <div class="registro">
+      ${voce('meno','−'+flusso.vend,'Vendita',`${flusso.vend} piante di ${g.lotto} · ${g.classe} a <b>${eur(flusso.prezzo)}</b> l'una`)}
+      ${voce('','€','Incasso',`<b>${eur(inc)}</b> a fronte di ${eur(cst)} di costo accumulato`)}
+      ${voce(inc-cst>=0?'piu':'meno','Δ','Margine',`<b>${eur(inc-cst)}</b>`)}</div>`;
+}
+
+/* --- intervento: la scheda dipende dal modello --- */
+function calcolaIntervento(){
+  const g=gruppoAperto,t=tipoDi(flusso.tipoInt);
+  if(t.chiede==='ore') return {ore:flusso.ore,mat:0};
+  if(t.chiede==='scelta'){
+    const o=t.opzioni.find(x=>x.k===flusso.scelta);
+    return {ore:flusso.oreTocco?flusso.ore:+(o.ore*g.qta).toFixed(2),
+            mat:flusso.matTocco?flusso.vaso:+(o.mat*g.qta).toFixed(2)};
+  }
+  return {ore:flusso.oreTocco?flusso.ore:+(t.ore*g.qta).toFixed(2),
+          mat:flusso.matTocco?flusso.vaso:+(t.mat*g.qta).toFixed(2)};
+}
+function passoIntervento(){
+  const g=gruppoAperto,t=tipoDi(flusso.tipoInt),v=calcolaIntervento();
+  if(passo===1){
+    barraTasti('Avanti',()=>{passo=2;disegnaPasso();});
+    const chip=TIPI.map(x=>`<button class="mini ${flusso.tipoInt===x.id?'on':''}"
+      onclick="setTipo('${x.id}')">${x.nome}</button>`).join('');
+    let corpo='';
+    if(t.chiede==='ore'){
+      corpo=`<div class="duecampi" style="margin-top:18px">
+        <div class="campo"><label for="i-o">Ore</label>
+          <input id="i-o" type="number" step="0.25" inputmode="decimal" value="${num(flusso.ore)}"
+            onchange="flusso.ore=+this.value||0;disegnaPasso()"></div>
+        <div class="campo"><label>Costo</label><input value="${eur(v.ore*TARIFFA)}" readonly></div></div>`;
+    } else {
+      const sc=t.chiede==='scelta'
+        ? `<div class="scala-eti"><span class="eyebrow">${t.etichetta}</span></div>
+           <div class="passo-tasti" style="margin-top:0">${t.opzioni.map(o=>
+             `<button class="mini ${flusso.scelta===o.k?'on':''}" onclick="setScelta('${o.k}')">${o.k}</button>`).join('')}</div>`
+        : '';
+      corpo=`${sc}
+        <div class="avviso" style="margin-top:18px">Precompilato dal config su <b>${g.qta}</b> piante.
+          Correggi se oggi è andata diversamente.</div>
+        <div class="duecampi">
+          <div class="campo"><label for="i-m">Materiali €</label>
+            <input id="i-m" type="number" step="0.10" inputmode="decimal" value="${num(v.mat)}"
+              onchange="flusso.vaso=+this.value||0;flusso.matTocco=true;disegnaPasso()"></div>
+          <div class="campo"><label for="i-o">Ore</label>
+            <input id="i-o" type="number" step="0.25" inputmode="decimal" value="${num(v.ore)}"
+              onchange="flusso.ore=+this.value||0;flusso.oreTocco=true;disegnaPasso()"></div></div>`;
+    }
+    return `<div class="eyebrow">Passo 1 — che cosa hai fatto</div>
+      <div class="domanda">Ogni tipo<br>ha la sua scheda.</div>
+      <div class="passo-tasti" style="margin-top:0">${chip}</div>
+      ${corpo}
+      <div class="campo" style="margin-top:14px"><label for="i-n">Note</label>
+        <textarea id="i-n" placeholder="rami eliminati, impostazione…"
+          onchange="flusso.note=this.value">${flusso.note}</textarea></div>`;
+  }
+  const costo=v.ore*TARIFFA+v.mat;
+  barraTasti('Salva',()=>salva(false),'Salva e ripeti',()=>salva(true));
+  return `<div class="eyebrow">Passo 2 — conferma</div>
+    <div class="domanda">Ecco cosa<br>viene scritto.</div>
+    <div class="registro">
+      ${voce('','●','Intervento',`<b>${t.nome}${t.chiede==='scelta'?' · '+flusso.scelta:''}</b> su ${g.lotto} · ${g.classe} (${g.qta} piante)`)}
+      ${voce('','€','Costo',`${eur(v.mat)} materiali + ${num(v.ore)} h × ${eur(TARIFFA)} = <b>${eur(costo)}</b>`)}
+      ${flusso.note?voce('','✎','Note',flusso.note):''}</div>
+    <div class="avviso">Il costo per pianta passa a <b>${eur((g.costo+costo)/Math.max(g.qta,1))}</b>.</div>`;
+}
+function setTipo(id){flusso.tipoInt=id;flusso.oreTocco=false;flusso.matTocco=false;
+  flusso.ore=0;flusso.vaso=0;disegnaPasso();}
+function setScelta(k){flusso.scelta=k;flusso.oreTocco=false;flusso.matTocco=false;disegnaPasso();}
+
+/* ================= SALVATAGGIO ================= */
+function salva(ripeti){
+  const g=gruppoAperto,t=flusso.tipo;
+  if(t==='conteggio'){
+    const d=flusso.contate-g.qta;
+    if(d!==0) MOVIMENTI.push({tipo:d<0?'perdita':'rettifica',qta:d,gruppo:g.id});
+    if(d<0) LOTTI[g.lotto].perse+=-d;
+    g.qta=flusso.contate;
+    brindisi(d<0?`Registrate ${-d} perdite`:'Giacenza confermata');
+  }
+  else if(t==='vendita'){
+    const q=flusso.vend,quota=perPianta(g)*q;
+    MOVIMENTI.push({tipo:'vendita',qta:-q,gruppo:g.id,valore:q*flusso.prezzo});
+    LOTTI[g.lotto].vendute+=q;
+    g.qta-=q;g.costo=Math.max(0,g.costo-quota);
+    brindisi(`Vendute ${q} · ${eur(q*flusso.prezzo)}`);
+  }
+  else if(t==='intervento'){
+    const v=calcolaIntervento(),costo=v.ore*TARIFFA+v.mat;
+    EVENTI.push({tipo:flusso.tipoInt,gruppo:g.id,ore:v.ore,costo});
+    g.costo+=costo;g.lav+=1;
+    brindisi(`${tipoDi(flusso.tipoInt).nome} registrato`);
+  }
+  else{
+    const d=flusso.contate-g.qta;
+    if(d!==0) MOVIMENTI.push({tipo:d<0?'perdita':'rettifica',qta:d,gruppo:g.id});
+    if(d<0) LOTTI[g.lotto].perse+=-d;
+    g.qta=flusso.contate;
+    const n=smistate();
+    const litriTot=Object.entries(flusso.dest).reduce((s,[c,q])=>s+q*cls(c).litri,0);
+    const kk=Object.keys(flusso.quote);
+    const somma=kk.reduce((s,k)=>s+(flusso.quote[k]||0),0)||1;
+    const costoSub=kk.reduce((s,k)=>s+litriTot*(flusso.quote[k]||0)/somma*matDi(k).eur,0);
+    const costoOp=costoSub+flusso.vaso+flusso.ore*TARIFFA;
+    const quotaTot=g.qta>0?g.costo*(n/g.qta):0;
+    g.costo=Math.max(0,g.costo-quotaTot);
+    const origine=g.lav;
+    Object.entries(flusso.dest).forEach(([c,q])=>{
+      if(!q) return;
+      const fr=q/n;
+      let dst=GRUPPI.find(x=>x.lotto===g.lotto&&x.classe===c);
+      if(!dst){dst={id:prossimoId++,lotto:g.lotto,classe:c,qta:0,lav:0,costo:0};GRUPPI.push(dst);}
+      dst.qta+=q;dst.costo+=quotaTot*fr+costoOp*fr;dst.lav=Math.max(dst.lav,origine)+1;
+      EVENTI.push({tipo:'Rinvaso',gruppo:dst.id,ore:flusso.ore*fr,costo:costoOp*fr,ricetta:flusso.ricetta});
+      MOVIMENTI.push({tipo:'trasferimento',qta:q,da:g.id,a:dst.id});
+    });
+    g.qta-=n;
+    if(g.qta===0) GRUPPI=GRUPPI.filter(x=>x.id!==g.id);
+    ultimaRicetta=flusso.ricetta;ultimeQuote={...flusso.quote};
+    brindisi(`Smistate ${n} piante`);
+  }
+  if(ripeti){
+    const succ=GRUPPI.filter(x=>x.id!==g.id&&x.classe===g.classe);
+    if(succ.length){gruppoAperto=succ[0];avvia(t);
+      brindisi('Stessi valori · gruppo successivo');return;}
+  }
+  vistaElenco();
+}
+
+
+/* ================= CONFIGURAZIONE ================= */
+let sezione='materiali';
+const SEZIONI=[['materiali','Materiali'],['miscele','Miscele'],
+  ['vasi','Vasi'],['interventi','Interventi'],['tariffe','Tariffe']];
+let miscelaAperta='produzione';
+
+function apriConfig(){
+  vista='config';gruppoAperto=null;flusso=null;
+  $('btn-indietro').classList.remove('nascosto');
+  $('btn-cfg').classList.add('nascosto');
+  $('marchio').textContent='Config';$('contatore').textContent='';
+  $('barra').classList.add('nascosto');
+  disegnaConfig();
+}
+function setSezione(k){sezione=k;disegnaConfig();}
+
+function disegnaConfig(){
+  const tab='<div class="sezioni">'+SEZIONI.map(([k,n])=>
+    `<button class="mini ${sezione===k?'on':''}" onclick="setSezione('${k}')">${n}</button>`).join('')+'</div>';
+  const f={materiali:cfgMateriali,miscele:cfgMiscele,vasi:cfgVasi,
+    interventi:cfgInterventi,tariffe:cfgTariffe}[sezione];
+  $('main').className='schermo';
+  $('main').innerHTML=tab+'<div class="cfg">'+f()+'</div>';
+}
+
+/* --- materiali --- */
+function cfgMateriali(){
+  let h='<div class="cfgtit">listino · prezzo al litro</div>';
+  MATERIALI.forEach((m,i)=>{
+    h+=`<div class="cfgriga ${m.attivo?'':'spenta'}">
+      <input type="text" value="${m.nome}" onchange="MATERIALI[${i}].nome=this.value;disegnaConfig()">
+      <input type="number" step="0.05" min="0" value="${num(m.eur)}"
+        onchange="MATERIALI[${i}].eur=+this.value||0;disegnaConfig()">
+      <span class="um">€/L</span>
+      <button class="interr ${m.attivo?'on':''}" onclick="MATERIALI[${i}].attivo=!MATERIALI[${i}].attivo;disegnaConfig()"
+        title="${m.attivo?'in uso':'non in uso'}">${m.attivo?'✓':'○'}</button></div>`;
+  });
+  h+=`<button class="aggiungi" onclick="nuovoMateriale()">+ Aggiungi materiale</button>
+    <div class="nota">Un materiale che non usi più si spegne, non si cancella: i rinvasi
+    già registrati continuano a mostrarlo. Cambiare un prezzo qui non tocca gli eventi passati,
+    che conservano il costo calcolato quel giorno.</div>`;
+  return h;
+}
+function nuovoMateriale(){
+  MATERIALI.push({id:'m'+Date.now(),nome:'Nuovo materiale',eur:0,attivo:true});
+  disegnaConfig();
+}
+
+/* --- miscele --- */
+function cfgMiscele(){
+  const r=RICETTE.find(x=>x.id===miscelaAperta)||RICETTE[0];
+  miscelaAperta=r.id;
+  let h='<div class="scelte">'+RICETTE.map(x=>
+    `<button class="mini ${x.id===r.id?'on':''}" onclick="miscelaAperta='${x.id}';disegnaConfig()">${x.nome}</button>`
+    ).join('')+'<button class="mini" onclick="nuovaMiscela()">+</button></div>';
+  const ir=RICETTE.indexOf(r);
+  h+=`<div class="cfgriga"><input type="text" value="${r.nome}"
+      onchange="RICETTE[${ir}].nome=this.value;disegnaConfig()">
+      <button class="interr ${r.sperimentale?'on':''}" title="miscela di prova"
+        onclick="RICETTE[${ir}].sperimentale=!RICETTE[${ir}].sperimentale;disegnaConfig()">🔬</button></div>`;
+  h+='<div class="cfgtit">composizione · in parti</div>';
+  const ids=Object.keys(r.quote);
+  if(!ids.length) h+='<div class="nota">Nessun materiale. Aggiungine qui sotto.</div>';
+  const somma=ids.reduce((s,k)=>s+(r.quote[k]||0),0)||1;
+  ids.forEach(k=>{
+    const m=matDi(k);
+    h+=`<div class="cfgriga"><input type="text" value="${m.nome}" readonly>
+      <span class="um">${Math.round((r.quote[k]||0)/somma*100)}%</span>
+      <input type="number" step="5" min="0" value="${num(r.quote[k])}"
+        onchange="RICETTE[${ir}].quote['${k}']=+this.value||0;disegnaConfig()">
+      <button class="interr" onclick="delete RICETTE[${ir}].quote['${k}'];disegnaConfig()">×</button></div>`;
+  });
+  const disp=MATERIALI.filter(m=>m.attivo&&r.quote[m.id]===undefined);
+  if(disp.length) h+='<div class="passo-tasti">'+disp.map(m=>
+    `<button class="mini" onclick="RICETTE[${ir}].quote['${m.id}']=10;disegnaConfig()">+ ${m.nome}</button>`
+    ).join('')+'</div>';
+  h+=`<div class="nota">Le parti sono proporzioni, non litri: l'app moltiplica per il volume
+    del vaso di destinazione. Il segno 🔬 marca una miscela di prova — usandola, il rinvaso
+    apre una variante sperimentale.</div>`;
+  return h;
+}
+function nuovaMiscela(){
+  const id='mix'+Date.now();
+  RICETTE.push({id,nome:'Nuova miscela',quote:{}});
+  miscelaAperta=id;disegnaConfig();
+}
+
+/* --- vasi --- */
+function cfgVasi(){
+  let h='<div class="cfgtit">classi di vaso · litri di substrato per vaso</div>';
+  CLASSI.forEach((c,i)=>{
+    const d=dim(c.id,34);
+    h+=`<div class="cfgriga ${c.attiva?'':'spenta'}">
+      <span class="vaso ${c.tondo?'tondo':''}" style="width:${d}px;height:${d}px">${c.id}</span>
+      <input type="text" value="${c.et}" onchange="CLASSI[${i}].et=this.value;disegnaConfig()">
+      <input type="number" step="0.05" min="0" value="${num(c.litri)}"
+        onchange="CLASSI[${i}].litri=+this.value||0;disegnaConfig()">
+      <span class="um">L</span>
+      <button class="interr ${c.attiva?'on':''}" onclick="CLASSI[${i}].attiva=!CLASSI[${i}].attiva;disegnaConfig()">${c.attiva?'✓':'○'}</button></div>`;
+  });
+  h+=`<div class="nota">I litri per vaso servono a calcolare il substrato consumato.
+    Misurali una volta riempiendo un vaso e travasandolo in una brocca graduata.</div>`;
+  return h;
+}
+
+/* --- interventi --- */
+function cfgInterventi(){
+  let h='<div class="cfgtit">modelli · quanto costa un intervento per pianta</div>';
+  TIPI.forEach((t,i)=>{
+    h+=`<div class="cfgriga"><input type="text" value="${t.nome}"
+      onchange="TIPI[${i}].nome=this.value;disegnaConfig()"></div>`;
+    if(t.chiede==='ore'){
+      h+=`<div class="nota" style="margin:-2px 2px 10px">chiede solo le ore, nessun preset</div>`;
+    } else if(t.chiede==='scelta'){
+      t.opzioni.forEach((o,j)=>{
+        h+=`<div class="cfgriga" style="margin-left:14px">
+          <input type="text" value="${o.k}" onchange="TIPI[${i}].opzioni[${j}].k=this.value;disegnaConfig()">
+          <input type="number" step="0.01" min="0" value="${num(o.mat)}"
+            onchange="TIPI[${i}].opzioni[${j}].mat=+this.value||0;disegnaConfig()"><span class="um">€/pi</span>
+          <input type="number" step="0.005" min="0" value="${num(o.ore)}"
+            onchange="TIPI[${i}].opzioni[${j}].ore=+this.value||0;disegnaConfig()"><span class="um">h/pi</span></div>`;
+      });
+    } else {
+      h+=`<div class="cfgriga" style="margin-left:14px">
+        <span style="flex:1" class="um">preset</span>
+        <input type="number" step="0.05" min="0" value="${num(t.mat)}"
+          onchange="TIPI[${i}].mat=+this.value||0;disegnaConfig()"><span class="um">€/pi</span>
+        <input type="number" step="0.05" min="0" value="${num(t.ore)}"
+          onchange="TIPI[${i}].ore=+this.value||0;disegnaConfig()"><span class="um">h/pi</span></div>`;
+    }
+  });
+  h+=`<div class="nota">I preset sono per pianta: l'app li moltiplica per le piante del gruppo
+    e ti lascia correggere. La legatura di un vaso da 24 consuma più filo di un 12 — se la
+    differenza pesa, questo campo va reso una tabella per classe di vaso.</div>`;
+  return h;
+}
+
+/* --- tariffe --- */
+function cfgTariffe(){
+  return `<div class="cfgtit">costo del lavoro e prezzo</div>
+    <div class="cfgriga"><input type="text" value="Tariffa oraria" readonly>
+      <input type="number" step="1" min="0" value="${num(TARIFFA)}"
+        onchange="TARIFFA=+this.value||0;disegnaConfig()"><span class="um">€/h</span></div>
+    <div class="cfgriga"><input type="text" value="Moltiplicatore prezzo" readonly>
+      <input type="number" step="0.5" min="1" value="${num(MOLTIPLICATORE)}"
+        onchange="MOLTIPLICATORE=+this.value||0;disegnaConfig()"><span class="um">×</span></div>
+    <div class="nota">La tariffa moltiplica tutte le ore registrate. Il moltiplicatore genera
+      il prezzo suggerito a partire dal costo per pianta: è una proposta, non un vincolo.</div>
+    <div class="cfgtit" style="margin-top:22px">dati</div>
+    <button class="aggiungi" onclick="brindisi('Nell\\'app vera: export JSON su Drive')">↧ Esporta tutto</button>
+    <button class="aggiungi" onclick="brindisi('Nell\\'app vera: import da file JSON')">↥ Importa backup</button>
+    <div class="nota">I dati stanno solo su questo dispositivo. L'export è l'unica copia
+      di sicurezza: va fatto spesso, e l'app deve ricordartelo.</div>`;
+}
+
+/* ================= BARRA ================= */
+function barraTasti(et,az,et2,az2,attivo=true){
+  const b=$('barra');
+  b.innerHTML=`${et2?`<button class="secondaria" id="b2">${et2}</button>`:''}
+    <button class="principale" id="b1" ${attivo?'':'disabled'}>${et}</button>`;
+  $('b1').onclick=az; if(et2) $('b2').onclick=az2;
+}
+function indietro(){
+  if(vista==='flusso'){ if(passo>1){passo--;disegnaPasso();} else apriGruppo(gruppoAperto.id); return;}
+  if(vista==='lotto'&&gruppoAperto){apriGruppo(gruppoAperto.id);return;}
+  vistaElenco();
+}
+vistaElenco();
+</script>
+</body>
+</html>

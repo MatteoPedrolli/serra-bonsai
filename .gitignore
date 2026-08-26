@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+*.log
+
+# I dati veri restano fuori dal repo: il sito pubblica solo il codice.
+# Il backup si porta sul telefono a mano e si importa da Config → Dati.
+serra-backup-migrato.json
+serra-backup-*.json
+dev/dati-vecchi.json
