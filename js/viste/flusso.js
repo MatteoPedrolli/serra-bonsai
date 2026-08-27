@@ -471,8 +471,12 @@ async function salva(piano, ripeti){
 
   if (ripeti){
     /* quando si rinvasa, si rinvasa in serie: stesso vaso, gruppo successivo */
+    /* prima le sorelle dello stesso lotto: quando si rinvasa una prova,
+       si finisce la prova, non si passa a un altro lotto */
     const succ = aperti().filter(x => x.id !== g.id && x.classe === classeOrigine)
-      .sort((a, b) => a.lotto.localeCompare(b.lotto))[0];
+      .sort((a, b) => (a.lotto === g.lotto ? 0 : 1) - (b.lotto === g.lotto ? 0 : 1)
+        || a.lotto.localeCompare(b.lotto)
+        || (a.suffisso || '').localeCompare(b.suffisso || ''))[0];
     if (succ){
       avvia(succ, tipo);
       if (tipo === 'rinvaso'){
