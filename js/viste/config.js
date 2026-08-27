@@ -1,6 +1,7 @@
 /* SERRA · Configurazione · § 7 — niente hardcoded, tutto da qui. */
 import { db } from '../db.js';
 import * as B from '../backup.js';
+import * as D from '../drive.js';
 import { S, registra, rendi, ricarica, imp } from '../stato.js';
 import { $, e, eur, num, disegna, testa, vaso, brindisi, chiedi, nascondiBarra } from '../ui.js';
 
@@ -210,6 +211,8 @@ async function caricaInfo(){
     giorni: await B.giorniDallUltimoExport(),
     nonSalvate: await B.righeNonSalvate(),
     istantanee: await B.elencoIstantanee(),
+    drive: await D.stato(),
+    clientId: await D.caricaClientId(),
   };
   rendi();
 }
@@ -272,6 +275,9 @@ function cfgDati(){
     ${ist}
     <div class="nota">L'app ne prende una da sola una volta al giorno, e sempre prima di un
       import o di un ripristino.</div>
+
+    <div class="cfgtit" style="margin-top:22px">copia automatica su Drive</div>
+    ${bloccoDrive()}
 
     <div class="cfgtit" style="margin-top:22px">ripartire da un file</div>
     <button class="aggiungi" data-az="importa:">↥ Importa backup</button>
@@ -341,4 +347,50 @@ AZ['ripristina'] = async id => {
   info = null;
   brindisi('Ripristinata');
   rendi();
+};
+
+/* ---------- copia automatica su Drive ---------- */
+function bloccoDrive(){
+  const d = info.drive;
+  if (!info.clientId) return `<div class="cfgriga">
+      <input type="text" value="" placeholder="codice cliente Google (.apps.googleusercontent.com)"
+        data-az="drive-id:" style="font-family:var(--mono);font-size:12px"></div>
+    <div class="nota">Incolla qui il codice cliente OAuth creato nella console Google. L'app userà
+      il permesso <b>drive.file</b>: vede soltanto i file che crea lei, del resto del tuo Drive non
+      sa niente. Il codice non è un segreto — nelle applicazioni web sta in chiaro per costruzione.</div>`;
+
+  return `<div class="cfgriga">
+      <input type="text" value="${e(info.clientId)}" data-az="drive-id:"
+        style="font-family:var(--mono);font-size:11px">
+      <button class="interr ${d.collegato ? 'on' : ''}" title="${d.collegato ? 'collegato' : 'non collegato'}"
+        data-az="drive-collega:">${d.collegato ? '✓' : '○'}</button></div>
+    ${d.ultimo
+      ? `<div class="avviso">Ultima copia su Drive <b>${quando(d.ultimo)}</b>${
+          d.file ? ' · ' + e(d.file) : ''}. Nella cartella <b>Serra — backup</b>, ne restano le ultime venti.</div>`
+      : `<div class="avviso giallo">Non ancora collegato. Il primo invio chiede il tuo permesso a
+         Google: dopo, l'app ci pensa da sola all'avvio e quando chiudi.</div>`}
+    <button class="aggiungi" data-az="drive-ora:">↗ Manda una copia su Drive adesso</button>
+    ${d.collegato ? '<button class="aggiungi" data-az="drive-scollega:">Scollega Drive</button>' : ''}
+    <div class="nota">L'app scrive e basta: non legge mai i dati da Drive, non è una
+      sincronizzazione. Se apri l'app su due telefoni, restano due archivi separati.</div>`;
+}
+
+AZ['drive-id'] = async (_, v) => { await D.impostaClientId(v); info = null; rendi(); };
+AZ['drive-collega'] = async () => {
+  try { await D.permesso({ interattivo: true }); brindisi('Permesso dato'); await AZ['drive-ora'](); }
+  catch (err){ brindisi(err.message); }
+};
+AZ['drive-ora'] = async () => {
+  brindisi('Invio in corso…');
+  try {
+    const r = await D.invia({ motivo: 'a mano' });
+    brindisi(`Su Drive: ${r.nome} · ${r.righe} righe`);
+  } catch (err){ brindisi('Drive: ' + err.message); }
+  info = null; rendi();
+};
+AZ['drive-scollega'] = async () => {
+  const ok = await chiedi('Scollegare Drive?',
+    'Le copie già caricate restano su Drive. Da qui in poi l’app smette di mandarne di nuove.', 'Scollega');
+  if (!ok) return;
+  await D.scollega(); info = null; rendi();
 };

@@ -3,6 +3,7 @@
    ============================================================ */
 import { apri } from './db.js';
 import * as B from './backup.js';
+import * as D from './drive.js';
 import { S, ricarica, radice, vai, torna, nav, imp } from './stato.js';
 import { $, e, brindisi } from './ui.js';
 
@@ -65,6 +66,15 @@ try {
   await B.istantaneaGiornaliera();
   await promemoria();
   window.addEventListener('serra:scritto', promemoria);
+
+  /* la copia su Drive: all'avvio e ogni volta che chiudi l'app, se hai
+     scritto qualcosa e c'è rete. In silenzio, senza rubarti un tocco. */
+  await D.caricaClientId();
+  const salvaFuori = async () => { if (await D.inviaSePuoi()) promemoria(); };
+  salvaFuori();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') salvaFuori();
+  });
 } catch (err){
   document.getElementById('main').innerHTML =
     `<div class="corpo"><div class="avviso rosso"><b>Non riesco ad aprire l'archivio.</b><br>

@@ -66,6 +66,34 @@ configurabile) l'app lo dice all'apertura.
 Non è sincronizzazione: due dispositivi che scrivono in parallelo non si
 fondono.
 
+### Copia automatica su Drive
+
+L'app può depositare il JSON su Drive da sola, all'avvio e quando la
+chiudi, senza server nostri in mezzo: è il browser che chiama le API di
+Google. Scrive soltanto — non rilegge mai l'archivio da fuori.
+
+Serve un codice cliente OAuth, da creare una volta:
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → nuovo progetto, nome a piacere
+2. **API e servizi → Libreria** → abilita **Google Drive API**
+3. **Schermata consenso OAuth** → tipo *Esterno* → compila nome app e la
+   tua mail → fra gli utenti di test aggiungi il tuo indirizzo Google
+4. **Credenziali → Crea credenziali → ID client OAuth** → tipo
+   *Applicazione web*. In **Origini JavaScript autorizzate** metti
+   `https://matteopedrolli.github.io` (e `http://localhost:8080` per le
+   prove). Nessun URI di reindirizzamento.
+5. Copia l'ID che finisce in `.apps.googleusercontent.com` e incollalo
+   in Config → Dati → *copia automatica su Drive*
+
+Lo scope richiesto è `drive.file`: l'app vede solo i file che ha creato
+lei, quindi Google non richiede alcuna verifica. Le copie finiscono nella
+cartella **Serra — backup**, una per invio, con la data nel nome; restano
+le ultime venti.
+
+Il permesso dura un'ora e si rinnova in silenzio finché la sessione
+Google del telefono è viva. Quando non ci riesce, l'app smette di
+insistere e aspetta un tocco in Config: non apre finestre a sorpresa.
+
 ## Stato della costruzione
 
 - [x] **Fase 1** — archivi, saldi, costi, export/import, test

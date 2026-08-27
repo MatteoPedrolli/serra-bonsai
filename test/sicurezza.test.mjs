@@ -77,3 +77,14 @@ test('un file di schema diverso non tocca niente', async () => {
   await assert.rejects(() => B.importa('{"schema":"2.0","lotti":[]}'), /incompatibile/i);
   assert.equal(await db.movimenti.count(), prima);
 });
+
+test('il corpo multiparte per Drive è ben formato', async () => {
+  const { corpoMultiparte } = await import('../js/drive.js');
+  const { tipo, corpo } = corpoMultiparte({ name: 'serra.json', parents: ['abc'] }, '{"a":1}');
+  const confine = tipo.match(/boundary=(.+)$/)[1];
+  assert.ok(corpo.startsWith(`--${confine}\r\n`), 'apre col confine');
+  assert.ok(corpo.endsWith(`--${confine}--`), 'chiude col confine');
+  assert.equal(corpo.split(`--${confine}`).length - 1, 3, 'due parti e la chiusura');
+  assert.ok(corpo.includes('"parents":["abc"]'), 'la cartella di destinazione c\'è');
+  assert.ok(corpo.includes('{"a":1}'), 'e i dati pure');
+});
