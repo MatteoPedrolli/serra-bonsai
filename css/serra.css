@@ -21,7 +21,7 @@ body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
   font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase;
   color:var(--fumo);cursor:pointer}
 .strumenti{display:flex;gap:8px;padding:12px 16px 4px;align-items:center}
-.cerca{flex:1;border:1px solid var(--linea);background:var(--carta);border-radius:2px;
+.cerca{flex:1;min-width:0;border:1px solid var(--linea);background:var(--carta);border-radius:2px;
   padding:9px 11px;font-family:var(--mono);font-size:14px;color:var(--inchiostro)}
 .cerca:focus{outline:2px solid var(--germoglio);outline-offset:-1px}
 .ordina{border:1px solid var(--linea);background:var(--carta);border-radius:2px;
@@ -86,7 +86,7 @@ body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
 .conta .att b{display:block;font-family:var(--mono);font-size:24px;
   font-weight:600;color:var(--inchiostro)}
 .freccia{color:var(--linea);font-size:20px}
-.numerone{flex:1;font-family:var(--mono);font-size:34px;font-weight:600;text-align:center;
+.numerone{flex:1;min-width:0;font-family:var(--mono);font-size:34px;font-weight:600;text-align:center;
   border:1.5px solid var(--inchiostro);border-radius:2px;padding:6px 4px;width:100%;
   background:var(--pomice);color:inherit}
 .numerone:focus{outline:2px solid var(--germoglio);outline-offset:1px}
@@ -106,7 +106,7 @@ body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
   text-transform:uppercase;letter-spacing:.1em}
 .dest{display:flex;align-items:center;gap:10px;background:var(--carta);
   border:1px solid var(--linea);padding:9px 11px;margin-top:8px;border-radius:2px}
-.dest .n{flex:1;font-family:var(--mono);font-size:22px;font-weight:600;text-align:center;
+.dest .n{flex:1;min-width:0;max-width:104px;font-family:var(--mono);font-size:22px;font-weight:600;text-align:center;
   border:1px solid var(--linea);border-radius:2px;padding:5px;background:var(--pomice);color:inherit}
 .tondino{width:38px;height:38px;flex:none;border:1px solid var(--linea);
   background:var(--pomice);border-radius:2px;font-size:19px;cursor:pointer;color:inherit;
@@ -131,7 +131,7 @@ body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
 .mix{background:var(--carta);border:1px solid var(--linea);padding:14px}
 .mixriga{display:flex;align-items:center;gap:10px;padding:7px 0}
 .mixriga+.mixriga{border-top:1px solid var(--linea)}
-.mixriga label{flex:1;font-family:var(--cond);font-size:14.5px;font-weight:600;
+.mixriga label{flex:1;min-width:0;font-family:var(--cond);font-size:14.5px;font-weight:600;
   text-transform:uppercase;letter-spacing:.05em}
 .mixriga .pz{font-family:var(--mono);font-size:11px;color:var(--fumo);
   min-width:52px;text-align:right}
@@ -160,7 +160,7 @@ body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
 .voce+.voce{border-top:1px solid var(--linea)}
 .segno{font-family:var(--mono);font-size:15px;font-weight:600;width:28px;flex:none}
 .segno.meno{color:var(--ruggine)} .segno.piu{color:var(--germoglio)}
-.voce .txt{flex:1;font-size:14.5px}
+.voce .txt{flex:1;min-width:0;font-size:14.5px;overflow-wrap:anywhere}
 .voce .txt b{font-family:var(--mono);font-weight:600}
 .voce .tag{font-family:var(--cond);font-size:10px;font-weight:700;color:var(--fumo);
   text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:2px}
@@ -171,7 +171,7 @@ body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
 .tabella{background:var(--carta);border:1px solid var(--linea)}
 .trg{display:flex;align-items:center;gap:11px;padding:11px 13px;font-size:14.5px}
 .trg+.trg{border-top:1px solid var(--linea)}
-.trg .et{flex:1;font-family:var(--cond);font-weight:600;text-transform:uppercase;
+.trg .et{flex:1;min-width:0;font-family:var(--cond);font-weight:600;text-transform:uppercase;
   letter-spacing:.05em;font-size:13.5px}
 .trg .vl{font-family:var(--mono);font-weight:600;font-size:16px}
 .pallino{width:11px;height:11px;flex:none;border-radius:2px}
@@ -275,3 +275,14 @@ body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
 .storia .voce .data{font-family:var(--mono);font-size:11px;color:var(--fumo);
   display:block;margin-bottom:2px}
 .piede{font-size:12.5px;color:var(--fumo);text-align:center;padding:26px 16px 0;line-height:1.5}
+
+/* ---- la riga di smistamento respira: il tasto × va a destra, la
+   casella resta piccola come il numero che contiene ---- */
+.dest{gap:8px}
+.dest>.tondino:last-child{margin-left:auto}
+.dest .vaso{margin-right:2px}
+
+/* Un input dentro un flex non si restringe da solo: senza min-width:0
+   allarga la riga oltre lo schermo e trascina fuori vista la barra in
+   fondo, che è fissata alla finestra. Vale per ogni campo qui dentro. */
+.corpo input, .corpo select, .corpo textarea{max-width:100%}

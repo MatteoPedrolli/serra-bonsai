@@ -1,6 +1,6 @@
 /* SERRA · service worker — in serra la rete non c'è.
    Cambia CACHE a ogni rilascio: il vecchio guscio viene buttato. */
-const CACHE = 'serra-v1';
+const CACHE = 'serra-v2';
 const GUSCIO = [
   '.', 'index.html', 'manifest.webmanifest',
   'css/serra.css',
