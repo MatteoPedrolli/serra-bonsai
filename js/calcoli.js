@@ -112,6 +112,30 @@ export function leggibilita(gruppi, variabile){
   return { esito:'leggibile' };
 }
 
+/* Resa di un insieme di gruppi che condividono un valore di variabile.
+   Le tre cose che contano, e che a occhio si sbagliano tutte:
+   · un rinvaso interno all'insieme non è un ingresso, è la stessa pianta
+   · una pianta venduta è riuscita, non persa
+   · una pianta che esce verso un gruppo senza quell'etichetta — perché
+     le prove sono state unite — è viva: la prova finisce lì, non muore. */
+export function resa(gruppi, movimenti, saldi){
+  const dentro = new Set(gruppi.map(g => g.id));
+  let entrate = 0, uscite = 0, vendute = 0;
+  for (const m of movimenti){
+    if (m.gruppoDa != null){
+      if (dentro.has(m.gruppoA) && !dentro.has(m.gruppoDa)) entrate += m.qta;
+      else if (dentro.has(m.gruppoDa) && !dentro.has(m.gruppoA)) uscite += m.qta;
+    } else if (dentro.has(m.gruppo)){
+      if (m.tipo === 'vendita') vendute -= m.qta;
+      else if (m.qta > 0) entrate += m.qta;
+    }
+  }
+  const vive = gruppi.reduce((s, g) => s + (saldi.get(g.id) || 0), 0);
+  const riuscite = vive + vendute + uscite;
+  return { entrate, vive, vendute, uscite, riuscite,
+           quota: entrate > 0 ? riuscite / entrate : 0 };
+}
+
 export const tutteLeProve = g => [...(g.storicoProve||[]), ...(g.prove||[])];
 export const etichetta = (g, variabile) => {
   const p = tutteLeProve(g).filter(x => x.variabile === variabile).pop();

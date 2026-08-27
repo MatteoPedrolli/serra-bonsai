@@ -39,7 +39,7 @@ function avvia(g, tipo){
         miscelaId: mis?.id || null, quote: { ...(ultimeQuote || mis?.quote || {}) },
         costoVasi: 0, ore: ultimeOre || 0, note: '', vigore: 0,
         prezzo: 0, vend: n, tipoInt: S.cfg.tipiIntervento[0]?.id, scelta: null,
-        oreTocco: false, matTocco: false, materiali: 0, data: oggi() };
+        oreTocco: false, matTocco: false, materiali: 0, unisci: {}, data: oggi() };
   if (tipo === 'rinvaso') f.dest[prossimaClasse(g.classe)] = n;
   if (tipo === 'intervento') f.scelta = tipoDi()?.opzioni?.[0]?.k || null;
   passo = 1;
@@ -135,6 +135,7 @@ function passoRinvaso(){
         <input class="n" type="number" inputmode="numeric" min="0" value="${n}" data-az="dest=:${c}">
         <button class="tondino" data-az="dest+:${c}">+</button>
         <button class="tondino" data-az="dest×:${c}">×</button></div>`;
+      righe += bloccoUnione(c);
     });
     let scala = '<div class="scala">';
     S.cfg.classi.filter(c => c.attiva || f.dest[c.id] !== undefined).forEach(c => {
@@ -209,6 +210,13 @@ function passoRinvaso(){
     voci += voce('', '●', 'Rinvaso · ' + e(d.classe),
       `${eur(ev.costoMateriali)} materiali · ${num(ev.ore)} h (${eur(ev.ore * ev.tariffa)}) · ${num(ev.dettagli.litriTotali)} L`);
   });
+  piano.destinazioni.filter(d => d.unisciA).forEach(d => {
+    const t = gruppo(d.unisciA);
+    voci += voce('', '⧉', 'Unione',
+      `entrano in <b>${e(nomeGruppo(t))}</b>` + (d.etichettePerse.length
+        ? ` · cade l'etichetta <b>${d.etichettePerse.map(p => e(p.variabile + ' ' + p.valore)).join('</b>, <b>')}</b>`
+        : ''));
+  });
   if (piano.resto > 0) voci += voce('', '=', 'Resta', `<b>${piano.resto}</b> piante in vaso ${e(classe(g.classe).etichetta)}`);
   else voci += voce('', '✕', 'Chiusura', `Il gruppo ${e(nomeGruppo(g))} si svuota e si chiude`);
 
@@ -227,11 +235,45 @@ function passoRinvaso(){
       <textarea id="i-note" data-az="note:" placeholder="andamento, radici, osservazioni…">${e(f.note)}</textarea></div>`;
 }
 
+/* ---- unione con un gruppo già aperto nella classe di destinazione ----
+   Compare solo quando la situazione esiste davvero: stesso lotto, stessa
+   classe, etichette diverse. Il valore predefinito è tenerle separate:
+   unire è una scelta, non un effetto collaterale. */
+function candidati(c){
+  const g = f.gruppo;
+  const mio = C.profilo({ prove: g.prove, storicoProve: g.storicoProve });
+  return aperti().filter(x => x.lotto === g.lotto && x.classe === c && x.id !== g.id
+    && C.profilo(x) !== mio);
+}
+
+function bloccoUnione(c){
+  const lista = candidati(c);
+  if (!lista.length) return '';
+  const scelto = f.unisci[c];
+  return `<div class="unione">
+    <span>In vaso ${e(classe(c).etichetta)} c'è già ${lista.length > 1 ? 'un gruppo' : ''}
+      <b>${e(nomeGruppo(lista[0]))}</b> con etichette diverse.</span>
+    <div class="passo-tasti" style="margin-top:8px">
+      <button class="mini ${!scelto ? 'on' : ''}" data-az="unisci:${c}|">tieni separate</button>
+      ${lista.map(x => `<button class="mini ${scelto === x.id ? 'on' : ''}"
+        data-az="unisci:${c}|${x.id}">unisci a ${e(nomeGruppo(x))}</button>`).join('')}</div>
+    ${scelto ? `<div class="nota" style="margin:8px 0 0">Le etichette che le dividevano cadono:
+      da qui in poi sono un mucchio solo, come sul bancale. Quello che hai già contato resta
+      in Analisi.</div>` : ''}</div>`;
+}
+AZIONI['unisci'] = arg => {
+  const [c, id] = arg.split('|');
+  if (id) f.unisci[c] = +id; else delete f.unisci[c];
+  rid();
+};
+
 function costruisciPiano(){
   const g = f.gruppo;
   return O.pianoRinvaso({
     gruppo: g, attese: f.attese, contate: f.contate, costo: costo(g),
-    destinazioni: Object.entries(f.dest).filter(([, n]) => n > 0).map(([c, n]) => ({ classe: c, piante: n })),
+    destinazioni: Object.entries(f.dest).filter(([, n]) => n > 0).map(([c, n]) => ({
+      classe: c, piante: n,
+      unisci: f.unisci[c] ? gruppo(f.unisci[c]) : null })),
     miscela: miscelaCorrente(), quote: f.quote,
     materiali: S.cfg.materiali, classi: S.cfg.classi,
     costoVasi: f.costoVasi, ore: f.ore, tariffa: imp('tariffaOraria'),

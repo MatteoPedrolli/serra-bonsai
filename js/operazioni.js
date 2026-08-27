@@ -33,6 +33,34 @@ export function pianoConteggio({ gruppo, attese, contate, vigore, data, note }){
   };
 }
 
+/* ---------- unione di due gruppi dello stesso lotto ----------
+   Nel vaso c'è scritto solo il codice lotto: due piante rinvasate nella
+   stessa classe e messe sullo stesso bancale non sono più distinguibili.
+   Se le unisci, un gruppo tiene solo le etichette vere di *tutte* le sue
+   piante: quelle che le dividevano cadono. Quello che è già stato
+   contato resta nei movimenti e nei conteggi, e l'Analisi continua a
+   leggerlo. § 6.2 */
+const chiaveProva = p => p.variabile + '=' + p.valore;
+
+function unisci(descrittore, esistente){
+  const entranti = [...descrittore.storicoProve, ...descrittore.prove];
+  const gia      = [...(esistente.storicoProve || []), ...(esistente.prove || [])];
+  const kEntranti = new Set(entranti.map(chiaveProva));
+  const kGia      = new Set(gia.map(chiaveProva));
+
+  const viste = new Set();
+  const comuni = entranti.filter(p => kGia.has(chiaveProva(p))
+    && !viste.has(chiaveProva(p)) && viste.add(chiaveProva(p)));
+
+  descrittore.unisciA = esistente.id;
+  descrittore.etichettePerse = [
+    ...entranti.filter(p => !kGia.has(chiaveProva(p))),
+    ...gia.filter(p => !kEntranti.has(chiaveProva(p))),
+  ];
+  descrittore.prove = [];
+  descrittore.storicoProve = comuni;
+}
+
 /* ---------- 2 · RINVASO ---------- */
 export function pianoRinvaso(p){
   const { gruppo, attese, contate, costo, destinazioni, miscela, quote,
@@ -76,6 +104,7 @@ export function pianoRinvaso(p){
       quotaCosto: r2(quotaD),
       litri: r2(litriDi(d)),
     };
+    if (d.unisci) unisci(descrittore, d.unisci);
     descrittore.costoPianta = d.piante > 0
       ? (descrittore.quotaCosto + descrittore.costoOperazione) / d.piante : 0;
     dest.push(descrittore);
@@ -142,6 +171,11 @@ export function pianoIntervento({ gruppo, piante, tipo, dettagli = {}, ore, cost
    stesso profilo di prove: fondere due profili diversi cancellerebbe la
    prova. In quel caso nasce un gruppo con un suffisso nuovo. */
 async function trovaOCrea(d){
+  /* unione chiesta esplicitamente: le etichette in conflitto cadono */
+  if (d.unisciA != null){
+    await db.gruppi.update(d.unisciA, { prove: [], storicoProve: d.storicoProve || [] });
+    return d.unisciA;
+  }
   const candidati = await db.gruppi.where({ lotto: d.lotto, classe: d.classe }).toArray();
   const aperti = candidati.filter(g => g.aperto);
   const cercato = C.profilo({ prove: d.prove, storicoProve: d.storicoProve });
@@ -176,6 +210,17 @@ export async function esegui(piano){
     }
     for (const c of piano.conteggi) await db.conteggi.add(c);
     for (const id of piano.chiudi) await db.gruppi.update(id, { aperto: false });
+
+    /* Rimasto solo, un gruppo non ha più bisogno del suffisso: torna a
+       chiamarsi come il lotto. È il «riunirle nel lotto». */
+    for (const d of piano.destinazioni){
+      if (d.unisciA == null) continue;
+      const g = await db.gruppi.get(d.unisciA);
+      if (!g || !g.suffisso) continue;
+      const fratelli = (await db.gruppi.where({ lotto: g.lotto, classe: g.classe }).toArray())
+        .filter(x => x.aperto && x.id !== g.id);
+      if (!fratelli.length) await db.gruppi.update(g.id, { suffisso: '' });
+    }
     return idDest;
   });
 }

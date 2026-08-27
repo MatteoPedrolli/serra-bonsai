@@ -9,17 +9,6 @@ const SEZIONI = [['resa', 'Resa'], ['costo', 'Costo'], ['margine', 'Margine'],
                  ['materiali', 'Materiali'], ['ore', 'Ore']];
 let sez = 'resa', variabileScelta = null, specieScelta = '', annoScelto = '';
 
-/* Piante entrate in un insieme di gruppi, contate una volta sola: un
-   rinvaso interno all'insieme non è un ingresso, è la stessa pianta che
-   cambia vaso portandosi dietro l'etichetta. § 6.2 */
-function entrate(gruppi){
-  const dentro = new Set(gruppi.map(g => g.id));
-  return S.movimenti.reduce((s, m) => {
-    if (m.gruppoDa != null)
-      return s + (dentro.has(m.gruppoA) && !dentro.has(m.gruppoDa) ? m.qta : 0);
-    return s + (dentro.has(m.gruppo) && m.qta > 0 ? m.qta : 0);
-  }, 0);
-}
 const ultimoVigore = id => S.conteggi.filter(c => c.gruppo === id && c.vigore).pop()?.vigore || null;
 const anni = () => [...new Set(S.lotti.map(l => l.anno))].sort();
 const specie = () => [...new Set(S.lotti.map(l => l.specie))].sort();
@@ -65,19 +54,17 @@ function aResa(){
 
   const righe = valori.map(v => {
     const gg = gruppi.filter(x => C.etichetta(x, variabileScelta) === v);
-    const ids = new Set(gg.map(g => g.id));
-    const ent = entrate(gg);
-    const viv = gg.reduce((s, g) => s + qta(g), 0);
-    /* una pianta venduta non è una perdita: conta fra le riuscite */
-    const ven = S.movimenti.reduce((s, m) =>
-      s + (m.tipo === 'vendita' && ids.has(m.gruppo) ? -m.qta : 0), 0);
+    const r = C.resa(gg, S.movimenti, S.q);
     const vig = gg.map(g => ultimoVigore(g.id)).filter(Boolean);
-    const p = ent ? (viv + ven) / ent : 0;
+    const dettaglio = [`${r.vive} vive`,
+      r.vendute ? `${r.vendute} vendute` : '',
+      r.uscite ? `${r.uscite} uscite dalla prova` : '',
+      vig.length ? 'vigore ' + num(vig.reduce((s, x) => s + x, 0) / vig.length) : '',
+    ].filter(Boolean).join(' · ');
     return `<div class="trg"><span class="et">${e(v)}
-        <span class="sub">${gg.length} gruppi · ${ent} entrate</span>
-        <span class="barrina"><i style="width:${Math.round(p * 100)}%"></i></span></span>
-      <span class="vl">${Math.round(p * 100)}%<span class="sub">${viv} vive${ven ? ' · ' + ven + ' vendute' : ''}${
-        vig.length ? ' · vigore ' + num(vig.reduce((s, x) => s + x, 0) / vig.length) : ''}</span></span></div>`;
+        <span class="sub">${gg.length} gruppi · ${r.entrate} entrate</span>
+        <span class="barrina"><i style="width:${Math.round(r.quota * 100)}%"></i></span></span>
+      <span class="vl">${Math.round(r.quota * 100)}%<span class="sub">${dettaglio}</span></span></div>`;
   }).join('');
 
   const marchio = stato.esito === 'leggibile'
@@ -91,9 +78,10 @@ function aResa(){
         `<button class="mini ${v === variabileScelta ? 'on' : ''}" data-var="${e(v)}">${e(v)}</button>`).join('')}</div>
       <div style="margin:2px 0 10px">${marchio}</div>
       <div class="tabella">${righe || '<div class="vuoto">Nessun gruppo con questo filtro.</div>'}</div>
-      <div class="nota">La resa confronta le piante vive di oggi con quelle entrate nel gruppo:
-      non è solo attecchimento, è sopravvivenza a distanza. Le etichette seguono le piante
-      attraverso i rinvasi, per anni. § 6.2</div>`;
+      <div class="nota">La resa confronta le piante entrate con quelle che ce l'hanno fatta: non è
+      solo attecchimento, è sopravvivenza a distanza. Le etichette seguono le piante attraverso i
+      rinvasi, per anni. Chi è uscito dalla prova — venduto, o unito a un gruppo che non porta più
+      quell'etichetta — conta fra le riuscite: lì la prova finisce, non muore. § 6.2</div>`;
 }
 
 /* ---------- 2 · costo per pianta ---------- */

@@ -286,3 +286,8 @@ body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
    allarga la riga oltre lo schermo e trascina fuori vista la barra in
    fondo, che è fissata alla finestra. Vale per ogni campo qui dentro. */
 .corpo input, .corpo select, .corpo textarea{max-width:100%}
+
+/* ---- unione di due gruppi: compare solo quando serve ---- */
+.unione{background:var(--carta);border:1px solid var(--linea);border-left:3px solid var(--ambra);
+  padding:10px 12px;margin-top:6px;font-size:13.5px}
+.unione b{font-family:var(--mono);font-weight:600}
