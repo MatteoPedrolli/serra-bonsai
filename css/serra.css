@@ -291,3 +291,7 @@ body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
 .unione{background:var(--carta);border:1px solid var(--linea);border-left:3px solid var(--ambra);
   padding:10px 12px;margin-top:6px;font-size:13.5px}
 .unione b{font-family:var(--mono);font-weight:600}
+
+/* ---- promemoria grave: lo spazio che il telefono può ripulire ---- */
+.promemoria.rosso{background:var(--ruggine-tenue);color:var(--ruggine);border-color:var(--ruggine)}
+.promemoria+.promemoria{margin-top:6px}

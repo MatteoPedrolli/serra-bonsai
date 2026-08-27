@@ -25,6 +25,10 @@ db.version(1).stores({
   impostazioni:   'chiave',
 });
 
+/* Le istantanee non stanno nell'export: sono copie *dell'* export, e una
+   copia dentro una copia non serve a nessuno. § 8 */
+db.version(2).stores({ istantanee: '++id, data' });
+
 /* Le sei tabelle di configurazione, nell'ordine in cui finiscono nell'export. */
 export const TABELLE_CONFIG = ['classi','materiali','miscele','tipiIntervento','variabili','impostazioni'];
 export const TABELLE_DATI   = ['lotti','gruppi','movimenti','eventi','conteggi'];

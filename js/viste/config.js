@@ -200,8 +200,51 @@ AZ['va-nuova']  = async () => {
   await ricarica(); rendi();
 };
 
-/* ---------- dati: tariffe e backup ---------- */
+
+/* ---------- dati: tariffe, spazio, copie ---------- */
+let info = null;                       /* caricato quando si apre la sezione */
+
+async function caricaInfo(){
+  info = {
+    spazio: await B.proteggiSpazio(),
+    giorni: await B.giorniDallUltimoExport(),
+    nonSalvate: await B.righeNonSalvate(),
+    istantanee: await B.elencoIstantanee(),
+  };
+  rendi();
+}
+
+const mb = n => (n / 1048576).toLocaleString('it-IT', { maximumFractionDigits: 1 }) + ' MB';
+const quando = iso => new Date(iso).toLocaleString('it-IT',
+  { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
 function cfgDati(){
+  if (!info){ caricaInfo(); return '<div class="vuoto">Un momento…</div>'; }
+  const s = info.spazio;
+
+  const statoSpazio = s.stato === 'protetto'
+    ? `<div class="avviso"><b>Spazio protetto.</b> Il browser si è impegnato a non cancellare
+       l'archivio per fare posto. ${s.spazio ? `Usati ${mb(s.usati)} su ${mb(s.spazio)}.` : ''}</div>`
+    : s.stato === 'a rischio'
+      ? `<div class="avviso rosso"><b>Spazio non protetto.</b> Il telefono può cancellare
+         l'archivio quando ha bisogno di posto, e su iPhone Safari lo fa da solo dopo qualche
+         settimana di inattività. Installa l'app dalla schermata Home: di solito il permesso
+         arriva subito dopo.</div>`
+      : `<div class="avviso giallo">Questo browser non sa dirmi se lo spazio è protetto.
+         Tieni le copie aggiornate.</div>`;
+
+  const copie = info.giorni === null
+    ? 'Nessuna copia fuori da qui.'
+    : `Ultima copia ${info.giorni === 0 ? 'oggi' : info.giorni + ' giorni fa'}` +
+      (info.nonSalvate ? `, ${info.nonSalvate} righe scritte da allora` : ', tutto salvato');
+
+  const ist = info.istantanee.length
+    ? info.istantanee.map(x => `<div class="cfgriga">
+        <span style="flex:1;font-size:13.5px">${quando(x.data)}
+          <span class="um" style="width:auto;display:block">${e(x.motivo)} · ${x.righe} righe</span></span>
+        <button class="mini" data-az="ripristina:${x.id}">ripristina</button></div>`).join('')
+    : '<div class="nota">Nessuna istantanea ancora.</div>';
+
   return `<div class="cfgtit">costo del lavoro e prezzo</div>
     <div class="cfgriga"><input type="text" value="Tariffa oraria" readonly>
       <input type="number" step="1" min="0" value="${+imp('tariffaOraria')}" data-az="set:tariffaOraria"><span class="um">€/h</span></div>
@@ -210,43 +253,91 @@ function cfgDati(){
     <div class="cfgriga"><input type="text" value="Promemoria backup" readonly>
       <input type="number" step="1" min="1" value="${+imp('giorniPromemoriaBackup')}" data-az="set:giorniPromemoriaBackup"><span class="um">gg</span></div>
     <div class="nota">La tariffa vale per gli interventi <i>futuri</i>: ogni evento conserva la
-      tariffa del giorno in cui è stato registrato. Il moltiplicatore genera il prezzo suggerito a
-      partire dal costo per pianta: è una proposta, non un vincolo.</div>
+      tariffa del giorno in cui è stato registrato.</div>
 
-    <div class="cfgtit" style="margin-top:22px">dati · ${S.movimenti.length} movimenti, ${S.eventi.length} eventi</div>
-    <button class="aggiungi" data-az="esporta:">↧ Esporta tutto in JSON</button>
+    <div class="cfgtit" style="margin-top:22px">dove stanno i dati</div>
+    ${statoSpazio}
+    <div class="nota">${e(copie)} · ${S.movimenti.length} movimenti, ${S.eventi.length} eventi,
+      ${S.gruppi.length} gruppi.</div>
+
+    <div class="cfgtit" style="margin-top:22px">copia di sicurezza</div>
+    <button class="aggiungi" data-az="condividi:">↗ Salva copia su Drive</button>
+    <button class="aggiungi" data-az="scarica:">↧ Scarica il file</button>
+    <div class="nota">È l'unica copia che sopravvive a questo telefono. Le istantanee qui sotto
+      stanno dentro l'archivio: servono a tornare indietro da un errore, non a salvarti se
+      l'archivio sparisce.</div>
+
+    <div class="cfgtit" style="margin-top:22px">istantanee locali · ${info.istantanee.length}</div>
+    ${ist}
+    <div class="nota">L'app ne prende una da sola una volta al giorno, e sempre prima di un
+      import o di un ripristino.</div>
+
+    <div class="cfgtit" style="margin-top:22px">ripartire da un file</div>
     <button class="aggiungi" data-az="importa:">↥ Importa backup</button>
     <input type="file" id="file-import" accept="application/json,.json" class="nascosto">
-    <div class="nota">I dati stanno solo su questo dispositivo: cancellare i dati del sito o
-      cambiare telefono li elimina. L'export è l'unica copia di sicurezza — un tocco, poi
-      condivisione su Drive. L'import sostituisce <b>tutto</b> quello che c'è qui.</div>`;
+    <div class="nota">L'import <b>sostituisce tutto</b>. Prima di farlo l'app ti dice quante righe
+      ci sono nel file e quante ne hai adesso, e mette da parte un'istantanea.</div>`;
 }
+
 AZ['set'] = async (k, v) => { await db.impostazioni.put({ chiave: k, valore: +v || 0 }); await ricarica(); rendi(); };
-AZ['esporta'] = async () => {
-  const { testo, nome, righe } = await B.esporta();
-  const url = URL.createObjectURL(new Blob([testo], { type: 'application/json' }));
-  const a = document.createElement('a');
-  a.href = url; a.download = nome; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
-  brindisi(`Esportate ${righe} righe · ${nome}`);
-  rendi();
+
+AZ['condividi'] = async () => {
+  const r = await B.condividi();
+  if (r.via === 'annullato') return;
+  brindisi(r.via === 'condivisione' ? `Condivise ${r.righe} righe` : `Scaricate ${r.righe} righe`);
+  await caricaInfo();
 };
+AZ['scarica'] = async () => {
+  const { testo, nome, righe } = await B.esporta();
+  B.scarica(testo, nome);
+  brindisi(`${righe} righe · ${nome}`);
+  await caricaInfo();
+};
+
 AZ['importa'] = () => {
   const inp = $('file-import');
   inp.onchange = async ev => {
     const file = ev.target.files[0];
+    inp.value = '';
     if (!file) return;
-    const testo = await file.text();
+    let esame;
+    try { esame = await B.esamina(await file.text()); }
+    catch (err){ return brindisi('File non valido: ' + err.message); }
+
+    const dettaglio = Object.entries(esame.perTabella)
+      .map(([t, n]) => `${n} ${t}`).join(' · ');
+    const allarme = esame.perdita > 0
+      ? `<div class="avviso rosso" style="margin:0 0 12px"><b>Attenzione: perdi ${esame.perdita} righe.</b>
+         Il file ne contiene ${esame.righeFile}, qui dentro ce ne sono ${esame.righeOra}.
+         Se è il file sbagliato, annulla adesso.</div>`
+      : '';
     const ok = await chiedi('Sostituire tutti i dati?',
-      `Il file <b>${e(file.name)}</b> prende il posto di quello che c'è adesso:
-       ${S.movimenti.length} movimenti, ${S.gruppi.length} gruppi. Non si torna indietro.`, 'Sostituisci');
+      `${allarme}<b>${e(file.name)}</b><br>${e(dettaglio)}<br>
+       ${esame.esportato ? 'esportato il ' + quando(esame.esportato) + '<br>' : ''}
+       <br>Prendo un'istantanea di com'è adesso, così puoi tornare indietro.`,
+      'Sostituisci');
     if (!ok) return;
     try {
-      const righe = await B.importa(testo);
+      const righe = await B.importa(await file.text());
       await ricarica();
+      info = null;
       brindisi(`Importate ${righe} righe`);
       rendi();
     } catch (err){ brindisi('Import fallito: ' + err.message); }
   };
   inp.click();
+};
+
+AZ['ripristina'] = async id => {
+  const x = info.istantanee.find(i => i.id === +id);
+  const ok = await chiedi('Tornare a questa istantanea?',
+    `<b>${quando(x.data)}</b> · ${x.righe} righe (${e(x.motivo)}).<br><br>
+     Quello che c'è adesso viene messo da parte in un'altra istantanea, quindi anche questo
+     passo si può annullare.`, 'Ripristina');
+  if (!ok) return;
+  await B.ripristina(+id);
+  await ricarica();
+  info = null;
+  brindisi('Ripristinata');
+  rendi();
 };
