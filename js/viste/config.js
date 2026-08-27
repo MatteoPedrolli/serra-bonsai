@@ -261,11 +261,12 @@ function cfgDati(){
       ${S.gruppi.length} gruppi.</div>
 
     <div class="cfgtit" style="margin-top:22px">copia di sicurezza</div>
-    <button class="aggiungi" data-az="condividi:">↗ Salva copia su Drive</button>
-    <button class="aggiungi" data-az="scarica:">↧ Scarica il file</button>
-    <div class="nota">È l'unica copia che sopravvive a questo telefono. Le istantanee qui sotto
-      stanno dentro l'archivio: servono a tornare indietro da un errore, non a salvarti se
-      l'archivio sparisce.</div>
+    <button class="aggiungi" data-az="condividi:">↗ Manda la copia fuori · Drive, mail…</button>
+    <button class="aggiungi" data-az="scarica:">↧ Scarica il file sul telefono</button>
+    <div class="nota">Il primo apre la condivisione del telefono: scegli <b>Drive</b> e il file si
+      posa lì. È l'unica copia che sopravvive a questo telefono — le istantanee qui sotto stanno
+      dentro l'archivio e muoiono con lui: servono a tornare indietro da un errore, non a salvarti
+      se l'archivio sparisce.</div>
 
     <div class="cfgtit" style="margin-top:22px">istantanee locali · ${info.istantanee.length}</div>
     ${ist}
