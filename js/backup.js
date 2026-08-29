@@ -79,12 +79,23 @@ export async function ripristina(id){
 }
 
 /* ---------- 3 · export ---------- */
-export async function esporta(){
+/* La copia si prepara *prima* del tocco: `navigator.share` vuole essere
+   chiamata mentre il tocco è ancora fresco, e leggere tutto l'archivio in
+   mezzo può bastare a farlo scadere. */
+export async function preparaCopia(){
   const dump = await costruisciExport();
-  const testo = JSON.stringify(dump, null, 1);
+  return { testo: JSON.stringify(dump, null, 1), nome: nomeFile(), righe: conta(dump) };
+}
+
+export async function segnaCopia(righe){
   await db.meta.put({ chiave: 'ultimoExport', valore: adesso() });
-  await db.meta.put({ chiave: 'righeUltimoExport', valore: conta(dump) });
-  return { testo, nome: nomeFile(), righe: conta(dump) };
+  await db.meta.put({ chiave: 'righeUltimoExport', valore: righe });
+}
+
+export async function esporta(){
+  const copia = await preparaCopia();
+  await segnaCopia(copia.righe);
+  return copia;
 }
 
 /* Un tocco e finisce su Drive, in posta, dove vuoi.
@@ -110,28 +121,50 @@ export function condivisioneDisponibile(){
   return varianti('{}', 'prova.json').some(accettato);
 }
 
-export async function condividi(){
-  const { testo, nome, righe } = await esporta();
+export async function condividi(copia){
+  const { testo, nome, righe } = copia || await preparaCopia();
   const etichetta = `Serra · ${righe} righe · ${new Date().toLocaleDateString('it-IT')}`;
+  let intoppo = null;
 
   if (navigator.share && navigator.canShare){
-    for (const file of varianti(testo, nome)){
-      if (!accettato(file)) continue;
+    /* prima il .txt: è il tipo che la lista di Chromium accetta di sicuro */
+    for (const file of varianti(testo, nome).reverse()){
+      if (!accettato(file)){ intoppo = intoppo || `tipo ${file.type} rifiutato`; continue; }
       try {
         await navigator.share({ files: [file], title: file.name, text: etichetta });
+        await segnaCopia(righe);
         return { via: 'condivisione', nome: file.name, righe };
       } catch (err){
         if (err && err.name === 'AbortError') return { via: 'annullato', nome, righe };
-        /* qualunque altro intoppo: si prova la variante, poi si scarica */
+        intoppo = (err && err.name) || 'errore sconosciuto';
       }
     }
-  }
+  } else intoppo = 'questo dispositivo non ha la condivisione';
 
   scarica(testo, nome);
-  return { via: 'scaricamento', nome, righe,
-           motivo: navigator.share
-             ? 'questo dispositivo non condivide file di questo tipo'
-             : 'questo dispositivo non ha la condivisione' };
+  await segnaCopia(righe);
+  return { via: 'scaricamento', nome, righe, motivo: intoppo };
+}
+
+/* ---------- che versione dell'app sta girando davvero ----------
+   Il nome della cache è la verità: è da lì che arrivano i file. */
+export async function versioneInUso(){
+  try {
+    const chiavi = await caches.keys();
+    return chiavi.find(k => k.startsWith('serra-')) || 'nessuna (rete diretta)';
+  } catch { return 'sconosciuta'; }
+}
+
+/* Cerca una versione nuova e la mette in servizio senza aspettare la
+   seconda riapertura. */
+export async function aggiornaApp(){
+  const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+  if (!reg) return 'niente da aggiornare';
+  await reg.update();
+  const pronto = reg.waiting || reg.installing;
+  if (!pronto) return 'già aggiornata';
+  if (reg.waiting) reg.waiting.postMessage('salta-attesa');
+  return 'in arrivo';
 }
 
 export function scarica(testo, nome){

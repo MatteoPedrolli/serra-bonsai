@@ -1,6 +1,6 @@
 /* SERRA · service worker — in serra la rete non c'è.
    Cambia CACHE a ogni rilascio: il vecchio guscio viene buttato. */
-const CACHE = 'serra-v8';
+const CACHE = 'serra-v9';
 const GUSCIO = [
   '.', 'index.html', 'manifest.webmanifest',
   'css/serra.css',
@@ -16,6 +16,9 @@ self.addEventListener('install', ev => {
     .then(c => c.addAll(GUSCIO))
     .then(() => self.skipWaiting()));
 });
+
+/* «entra in servizio adesso», mandato da Config → Dati */
+self.addEventListener('message', ev => { if (ev.data === 'salta-attesa') self.skipWaiting(); });
 
 self.addEventListener('activate', ev => {
   ev.waitUntil(caches.keys()

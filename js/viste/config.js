@@ -213,6 +213,8 @@ async function caricaInfo(){
     istantanee: await B.elencoIstantanee(),
     drive: await D.stato(),
     clientId: await D.caricaClientId(),
+    versione: await B.versioneInUso(),
+    copia: await B.preparaCopia(),      /* pronta: il tocco non deve aspettare */
   };
   rendi();
 }
@@ -281,6 +283,12 @@ function cfgDati(){
     <div class="nota">L'app ne prende una da sola una volta al giorno, e sempre prima di un
       import o di un ripristino.</div>
 
+    <div class="cfgtit" style="margin-top:22px">versione dell'app</div>
+    <div class="cfgriga"><span style="flex:1;font-family:var(--mono);font-size:13px">${e(info.versione)}</span>
+      <button class="mini" data-az="aggiorna:">cerca aggiornamenti</button></div>
+    <div class="nota">È il nome della cache da cui l'app sta pescando i file: se dopo un
+      aggiornamento vedi ancora il numero vecchio, tocca qui.</div>
+
     <div class="cfgtit" style="margin-top:22px">copia automatica su Drive</div>
     ${bloccoDrive()}
 
@@ -294,11 +302,11 @@ function cfgDati(){
 AZ['set'] = async (k, v) => { await db.impostazioni.put({ chiave: k, valore: +v || 0 }); await ricarica(); rendi(); };
 
 AZ['condividi'] = async () => {
-  const r = await B.condividi();
+  const r = await B.condividi(info && info.copia);
   if (r.via === 'annullato') return;
   brindisi(r.via === 'condivisione'
     ? `Condiviso ${r.nome} · ${r.righe} righe`
-    : `Scaricato nei Download: ${r.motivo}`);
+    : `Scaricato nei Download · ${r.motivo}`);
   await caricaInfo();
 };
 AZ['scarica'] = async () => {
@@ -400,4 +408,11 @@ AZ['drive-scollega'] = async () => {
     'Le copie già caricate restano su Drive. Da qui in poi l’app smette di mandarne di nuove.', 'Scollega');
   if (!ok) return;
   await D.scollega(); info = null; rendi();
+};
+
+AZ['aggiorna'] = async () => {
+  brindisi('Cerco…');
+  const esito = await B.aggiornaApp();
+  brindisi(esito === 'in arrivo' ? 'Versione nuova in arrivo: l’app si ricarica' : 'App ' + esito);
+  info = null; rendi();
 };

@@ -84,5 +84,13 @@ try {
 }
 
 /* ---- PWA: in serra la rete non c'è ---- */
-if ('serviceWorker' in navigator && location.protocol.startsWith('http'))
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').catch(() => {});
+  /* la versione nuova entra in servizio: si riparte da capo una volta sola */
+  let ricaricato = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (ricaricato) return;
+    ricaricato = true;
+    location.reload();
+  });
+}
