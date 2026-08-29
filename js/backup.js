@@ -87,22 +87,51 @@ export async function esporta(){
   return { testo, nome: nomeFile(), righe: conta(dump) };
 }
 
-/* Un tocco e finisce su Drive, in posta, dove vuoi. Dove la condivisione
-   di file non esiste, resta lo scaricamento. */
+/* Un tocco e finisce su Drive, in posta, dove vuoi.
+
+   Chromium consente di condividere solo certi tipi di file, e
+   `application/json` non è fra quelli: sul telefono il primo tentativo
+   viene rifiutato, e senza il secondo il tasto si limitava a scaricare
+   senza spiegare perché. Il gemello .txt ha lo stesso contenuto — è JSON
+   dentro — e passa. */
+const varianti = (testo, nome) => [
+  new File([testo], nome, { type: 'application/json' }),
+  new File([testo], nome.replace(/\.json$/, '') + '.txt', { type: 'text/plain' }),
+];
+
+const accettato = file => {
+  try { return !!(navigator.canShare && navigator.canShare({ files: [file] })); }
+  catch { return false; }
+};
+
+/* Serve all'interfaccia per non promettere quello che non può mantenere. */
+export function condivisioneDisponibile(){
+  if (typeof navigator === 'undefined' || !navigator.share || !navigator.canShare) return false;
+  return varianti('{}', 'prova.json').some(accettato);
+}
+
 export async function condividi(){
   const { testo, nome, righe } = await esporta();
-  const file = new File([testo], nome, { type: 'application/json' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })){
-    try {
-      await navigator.share({ files: [file], title: nome,
-        text: `Serra · ${righe} righe · ${new Date().toLocaleDateString('it-IT')}` });
-      return { via: 'condivisione', nome, righe };
-    } catch (err){
-      if (err && err.name === 'AbortError') return { via: 'annullato', nome, righe };
+  const etichetta = `Serra · ${righe} righe · ${new Date().toLocaleDateString('it-IT')}`;
+
+  if (navigator.share && navigator.canShare){
+    for (const file of varianti(testo, nome)){
+      if (!accettato(file)) continue;
+      try {
+        await navigator.share({ files: [file], title: file.name, text: etichetta });
+        return { via: 'condivisione', nome: file.name, righe };
+      } catch (err){
+        if (err && err.name === 'AbortError') return { via: 'annullato', nome, righe };
+        /* qualunque altro intoppo: si prova la variante, poi si scarica */
+      }
     }
   }
+
   scarica(testo, nome);
-  return { via: 'scaricamento', nome, righe };
+  return { via: 'scaricamento', nome, righe,
+           motivo: navigator.share
+             ? 'questo dispositivo non condivide file di questo tipo'
+             : 'questo dispositivo non ha la condivisione' };
 }
 
 export function scarica(testo, nome){

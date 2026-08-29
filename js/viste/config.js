@@ -264,12 +264,17 @@ function cfgDati(){
       ${S.gruppi.length} gruppi.</div>
 
     <div class="cfgtit" style="margin-top:22px">copia di sicurezza</div>
-    <button class="aggiungi" data-az="condividi:">↗ Manda la copia fuori · Drive, mail…</button>
-    <button class="aggiungi" data-az="scarica:">↧ Scarica il file sul telefono</button>
-    <div class="nota">Il primo apre la condivisione del telefono: scegli <b>Drive</b> e il file si
-      posa lì. È l'unica copia che sopravvive a questo telefono — le istantanee qui sotto stanno
-      dentro l'archivio e muoiono con lui: servono a tornare indietro da un errore, non a salvarti
-      se l'archivio sparisce.</div>
+    ${B.condivisioneDisponibile()
+      ? `<button class="aggiungi" data-az="condividi:">↗ Manda la copia fuori · Drive, mail…</button>`
+      : ''}
+    <button class="aggiungi" data-az="scarica:">↧ Scarica il file</button>
+    <div class="nota">${B.condivisioneDisponibile()
+      ? `Il primo apre la scelta della destinazione: <b>Drive</b>, posta, quello che vuoi. Il file
+         parte come <b>.txt</b> — dentro è lo stesso JSON, ma Android non lascia condividere i .json.`
+      : `Questo dispositivo non sa aprire la condivisione, quindi il file finisce nei Download e da
+         lì lo sposti tu. Dal telefono, invece, compare la scelta della destinazione.`}
+      È l'unica copia che sopravvive a questo dispositivo: le istantanee qui sotto stanno dentro
+      l'archivio e muoiono con lui.</div>
 
     <div class="cfgtit" style="margin-top:22px">istantanee locali · ${info.istantanee.length}</div>
     ${ist}
@@ -281,7 +286,7 @@ function cfgDati(){
 
     <div class="cfgtit" style="margin-top:22px">ripartire da un file</div>
     <button class="aggiungi" data-az="importa:">↥ Importa backup</button>
-    <input type="file" id="file-import" accept="application/json,.json" class="nascosto">
+    <input type="file" id="file-import" accept="application/json,.json,text/plain,.txt" class="nascosto">
     <div class="nota">L'import <b>sostituisce tutto</b>. Prima di farlo l'app ti dice quante righe
       ci sono nel file e quante ne hai adesso, e mette da parte un'istantanea.</div>`;
 }
@@ -291,7 +296,9 @@ AZ['set'] = async (k, v) => { await db.impostazioni.put({ chiave: k, valore: +v 
 AZ['condividi'] = async () => {
   const r = await B.condividi();
   if (r.via === 'annullato') return;
-  brindisi(r.via === 'condivisione' ? `Condivise ${r.righe} righe` : `Scaricate ${r.righe} righe`);
+  brindisi(r.via === 'condivisione'
+    ? `Condiviso ${r.nome} · ${r.righe} righe`
+    : `Scaricato nei Download: ${r.motivo}`);
   await caricaInfo();
 };
 AZ['scarica'] = async () => {
