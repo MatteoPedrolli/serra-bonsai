@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Serra — informativa privacy</title>
+<link rel="icon" href="icone/icona.svg">
+<link rel="stylesheet" href="css/serra.css">
+<style>
+  .pagina{max-width:640px;margin:0 auto;padding:28px 20px 60px}
+  .pagina h1{font-family:var(--cond);font-size:30px;font-weight:700;letter-spacing:.02em;margin:0 0 4px}
+  .pagina h2{font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--fumo);margin:32px 0 8px}
+  .pagina p,.pagina li{font-size:15.5px;line-height:1.55}
+  .pagina ul{padding-left:20px}
+  .pagina .data{font-family:var(--mono);font-size:12px;color:var(--fumo)}
+  .pagina a{color:var(--germoglio)}
+</style>
+</head>
+<body>
+<div class="pagina">
+  <h1>Serra</h1>
+  <p class="data">Informativa sulla privacy · aggiornata il 29 agosto 2026</p>
+
+  <p>Serra è un'applicazione per la gestione della produzione di bonsai: lotti di
+  talee, rinvasi, lavorazioni, costi e vendite. È fatta di soli file statici e
+  gira interamente nel browser di chi la usa.</p>
+
+  <h2>Dove stanno i dati</h2>
+  <p>Tutto quello che scrivi resta <b>sul tuo dispositivo</b>, nell'archivio locale
+  del browser (IndexedDB). Non esiste alcun server dell'applicazione: non c'è un
+  posto dove i tuoi dati potrebbero essere raccolti, perché non vengono mai
+  inviati da nessuna parte se non sei tu a chiederlo.</p>
+
+  <h2>Che cosa non facciamo</h2>
+  <ul>
+    <li>nessun account, nessuna registrazione, nessuna password</li>
+    <li>nessuna statistica d'uso, nessun cookie di tracciamento, nessuna pubblicità</li>
+    <li>nessuna condivisione o vendita di dati a terzi: non li riceviamo nemmeno</li>
+  </ul>
+
+  <h2>Google Drive</h2>
+  <p>Se scegli di attivare la copia di sicurezza automatica, l'applicazione chiede
+  il tuo permesso per accedere a Google Drive con l'ambito
+  <b>drive.file</b>. Questo ambito consente di vedere e modificare
+  <b>soltanto i file creati dall'applicazione stessa</b>: il resto del tuo Drive
+  resta invisibile.</p>
+  <p>Con quel permesso l'applicazione fa una cosa sola: deposita nella cartella
+  <b>Serra — backup</b> del <i>tuo</i> Drive una copia dei tuoi dati, in formato
+  JSON, e cancella le copie più vecchie della ventesima. Non legge altro, non
+  scrive altrove, e quei file restano tuoi e solo tuoi. Il permesso si revoca
+  quando vuoi, dall'applicazione oppure da
+  <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</p>
+
+  <h2>Font</h2>
+  <p>Le pagine caricano i caratteri tipografici IBM Plex dal servizio Google
+  Fonts, che per farlo riceve l'indirizzo IP della richiesta. Dopo la prima
+  apertura i caratteri restano nella memoria locale e l'applicazione funziona
+  senza rete.</p>
+
+  <h2>Cancellare tutto</h2>
+  <p>Per rimuovere i dati basta cancellare i dati del sito dalle impostazioni del
+  browser, o disinstallare l'applicazione. Nessuna copia resta altrove, tranne
+  quelle che hai deliberatamente salvato tu su Drive o su un file.</p>
+
+  <h2>Contatti</h2>
+  <p>L'applicazione è uno strumento personale, sviluppato e usato dal titolare del
+  progetto. Per domande sull'informativa si può scrivere all'indirizzo di
+  assistenza indicato nella schermata di consenso di Google.</p>
+
+  <p style="margin-top:36px"><a href="./">← torna all'applicazione</a></p>
+</div>
+</body>
+</html>
