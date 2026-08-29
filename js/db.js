@@ -86,6 +86,7 @@ export const SEMI = {
     { chiave:'tariffaOraria',          valore:25 },
     { chiave:'moltiplicatorePrezzo',   valore:3 },
     { chiave:'giorniPromemoriaBackup', valore:14 },
+    { chiave:'giorniBackupDrive',      valore:3 },
   ],
 };
 
@@ -95,6 +96,12 @@ export async function seminaConfig(){
   for (const t of TABELLE_CONFIG){
     if (await db[t].count() === 0) await db[t].bulkPut(SEMI[t]);
   }
+  /* Le impostazioni sono chiavi sciolte: una aggiunta in una versione
+     nuova non arriverebbe mai a chi ha già l'app. Si aggiungono quelle
+     che mancano, senza toccare i valori scelti dall'utente. */
+  for (const s of SEMI.impostazioni)
+    if (!(await db.impostazioni.get(s.chiave))) await db.impostazioni.put(s);
+
   if (!(await db.meta.get('schema'))) await db.meta.put({ chiave:'schema', valore:SCHEMA });
 }
 

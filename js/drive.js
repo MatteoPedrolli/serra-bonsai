@@ -11,7 +11,6 @@ import * as B from './backup.js';
    tuo Drive non sa niente, e Google non chiede verifiche per questo. */
 const AMBITO = 'https://www.googleapis.com/auth/drive.file';
 const CARTELLA = 'Serra — backup';
-const TIENI = 20;                     /* quante copie tenere su Drive */
 const ATTESA = 5 * 60 * 1000;         /* non più di una copia ogni 5 minuti */
 
 let gis = null, token = null, scadenza = 0, inCorso = null;
@@ -122,35 +121,52 @@ export function corpoMultiparte(metadati, testo){
   };
 }
 
-/* Ogni copia è un file nuovo con la sua data: così su Drive resta lo
-   storico e un archivio rovinato non sovrascrive quello buono. Le più
-   vecchie della ventesima si cancellano. */
+/* Un file solo, sempre lo stesso, riscritto da capo ogni volta: su Drive
+   resta una riga sola invece di una collezione. La storia non si perde
+   perché ogni riscrittura diventa una *versione* del file, e chiediamo a
+   Drive di tenerle tutte: tasto destro sul file → Gestisci versioni.
+   È il meglio dei due modi — ordine sopra, storico sotto. */
+const NOME_FILE = 'serra.json';
+
+async function fileEsistente(idCartella){
+  const salvato = await db.meta.get('driveFileId');
+  if (salvato && salvato.valore){
+    try {
+      const f = await api(`https://www.googleapis.com/drive/v3/files/${salvato.valore}?fields=id,trashed`);
+      if (f && !f.trashed) return salvato.valore;
+    } catch { /* cancellato a mano: se ne fa uno nuovo */ }
+  }
+  const l = await api('https://www.googleapis.com/drive/v3/files?fields=files(id)&pageSize=1&q='
+    + encodeURIComponent(`name='${NOME_FILE}' and '${idCartella}' in parents and trashed=false`));
+  return (l.files && l.files[0]) ? l.files[0].id : null;
+}
+
 export async function invia({ motivo = 'automatica' } = {}){
   if (inCorso) return inCorso;
   inCorso = (async () => {
     const idCartella = await cartella();
-    const { testo, nome, righe } = await B.esporta();
-    const { tipo, corpo } = corpoMultiparte({ name: nome, parents: [idCartella] }, testo);
-    const file = await api(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',
-      { method: 'POST', headers: { 'Content-Type': tipo }, body: corpo });
+    const { testo, righe } = await B.esporta();
+    const esistente = await fileEsistente(idCartella);
 
+    /* keepRevisionForever: senza, Drive fa piazza pulita delle versioni
+       vecchie quando gli pare. Con, restano finché non le togli tu. */
+    const { tipo, corpo } = esistente
+      ? corpoMultiparte({ name: NOME_FILE }, testo)
+      : corpoMultiparte({ name: NOME_FILE, parents: [idCartella] }, testo);
+    const url = esistente
+      ? `https://www.googleapis.com/upload/drive/v3/files/${esistente}?uploadType=multipart&keepRevisionForever=true&fields=id,name,version`
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&keepRevisionForever=true&fields=id,name,version';
+
+    const file = await api(url, { method: esistente ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': tipo }, body: corpo });
+
+    await db.meta.put({ chiave: 'driveFileId', valore: file.id });
     await db.meta.put({ chiave: 'driveUltimo', valore: adesso() });
     await db.meta.put({ chiave: 'driveUltimoFile', valore: file.name });
-    await potatura(idCartella);
-    return { nome: file.name, righe, motivo };
+    await db.meta.put({ chiave: 'driveVersioni', valore: (file.version || '') + '' });
+    return { nome: file.name, righe, motivo, versione: file.version, nuovo: !esistente };
   })().finally(() => { inCorso = null; });
   return inCorso;
-}
-
-async function potatura(idCartella){
-  const l = await api('https://www.googleapis.com/drive/v3/files?fields=files(id,name,createdTime)'
-    + '&orderBy=createdTime desc&pageSize=100&q='
-    + encodeURIComponent(`'${idCartella}' in parents and trashed=false`));
-  const troppi = (l.files || []).slice(TIENI);
-  for (const f of troppi)
-    await api(`https://www.googleapis.com/drive/v3/files/${f.id}`, { method: 'DELETE' });
-  return troppi.length;
 }
 
 export async function elenco(){
@@ -167,9 +183,14 @@ export async function elenco(){
    aspetta che lo dia tu dalla configurazione. */
 export async function inviaSePuoi(){
   if (!configurato() || !navigator.onLine) return null;
+  if ((await B.righeNonSalvate()) === 0) return null;      /* niente di nuovo da salvare */
+
+  const g = await db.impostazioni.get('giorniBackupDrive');
+  const giorni = g && g.valore != null ? +g.valore : 3;
   const ultimo = await db.meta.get('driveUltimo');
-  if (ultimo && Date.now() - new Date(ultimo.valore).getTime() < ATTESA) return null;
-  if ((await B.righeNonSalvate()) === 0) return null;
+  const attesa = Math.max(giorni, 0) * 86400000 || ATTESA;
+  if (ultimo && Date.now() - new Date(ultimo.valore).getTime() < attesa) return null;
+
   try { return await invia({ motivo: 'automatica' }); }
   catch { return null; }
 }

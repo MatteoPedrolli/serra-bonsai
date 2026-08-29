@@ -396,9 +396,14 @@ function bloccoDrive(){
     ${guaio}
     ${d.ultimo
       ? `<div class="avviso">Ultima copia su Drive <b>${quando(d.ultimo)}</b>${
-          d.file ? ' · ' + e(d.file) : ''}. Nella cartella <b>Serra — backup</b>, ne restano le ultime venti.</div>`
+          d.file ? ' · ' + e(d.file) : ''}, nella cartella <b>Serra — backup</b>.
+          È sempre lo stesso file: le versioni precedenti restano tutte, tasto destro sul file →
+          <i>Gestisci versioni</i>.</div>`
       : `<div class="avviso giallo">Non ancora collegato. Il primo invio chiede il tuo permesso a
-         Google: dopo, l'app ci pensa da sola all'avvio e quando chiudi.</div>`}
+         Google: dopo, l'app ci pensa da sola.</div>`}
+    <div class="cfgriga"><input type="text" value="Ogni quanti giorni" readonly>
+      <input type="number" step="1" min="0" value="${+imp('giorniBackupDrive')}"
+        data-az="set:giorniBackupDrive"><span class="um">gg</span></div>
     <button class="aggiungi" data-az="drive-ora:">↗ Manda una copia su Drive adesso</button>
     ${d.collegato ? '<button class="aggiungi" data-az="drive-scollega:">Scollega Drive</button>' : ''}
     <div class="nota">L'app scrive e basta: non legge mai i dati da Drive, non è una

@@ -45,10 +45,11 @@
   <b>drive.file</b>. Questo ambito consente di vedere e modificare
   <b>soltanto i file creati dall'applicazione stessa</b>: il resto del tuo Drive
   resta invisibile.</p>
-  <p>Con quel permesso l'applicazione fa una cosa sola: deposita nella cartella
-  <b>Serra — backup</b> del <i>tuo</i> Drive una copia dei tuoi dati, in formato
-  JSON, e cancella le copie più vecchie della ventesima. Non legge altro, non
-  scrive altrove, e quei file restano tuoi e solo tuoi. Il permesso si revoca
+  <p>Con quel permesso l'applicazione fa una cosa sola: tiene aggiornato un solo file,
+  <b>serra.json</b>, nella cartella <b>Serra — backup</b> del <i>tuo</i> Drive:
+  una copia dei tuoi dati, che riscrive ogni volta conservandone le versioni
+  precedenti. Non legge altro, non scrive altrove, e quel file resta tuo e solo
+  tuo. Il permesso si revoca
   quando vuoi, dall'applicazione oppure da
   <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</p>
 
