@@ -402,7 +402,13 @@ function bloccoDrive(){
     <button class="aggiungi" data-az="drive-ora:">↗ Manda una copia su Drive adesso</button>
     ${d.collegato ? '<button class="aggiungi" data-az="drive-scollega:">Scollega Drive</button>' : ''}
     <div class="nota">L'app scrive e basta: non legge mai i dati da Drive, non è una
-      sincronizzazione. Se apri l'app su due telefoni, restano due archivi separati.</div>`;
+      sincronizzazione. Se apri l'app su due telefoni, restano due archivi separati.</div>
+    <div class="nota">Se Google risponde <b>403</b> dicendo che l'app «non ha completato la
+      procedura di verifica», è perché il progetto è in <b>modalità Test</b> e fa entrare solo gli
+      indirizzi elencati fra gli <b>utenti di test</b>. Aggiungi lì l'indirizzo Google con cui sei
+      entrato su questo telefono — oppure pubblica l'app: con il permesso <b>drive.file</b> nessuna
+      verifica è richiesta. Le copie finiscono nel Drive dell'account che dà il permesso: se ne hai
+      due, scegli con cura quale.</div>`;
 }
 
 AZ['drive-id'] = async (_, v) => { await D.impostaClientId(v); info = null; rendi(); };

@@ -68,8 +68,14 @@ export async function permesso({ interattivo = false } = {}){
           ok(token);
         } else no(new Error('Permesso negato.'));
       },
-      error_callback: err => no(new Error(
-        err && err.type === 'popup_closed' ? 'Finestra chiusa.' : 'Serve il tuo permesso.')),
+      error_callback: err => {
+        /* Google spiega bene i suoi rifiuti: riportarli per intero vale
+           più di qualunque messaggio riscritto da noi. */
+        if (err && err.type === 'popup_closed') return no(new Error('Finestra chiusa.'));
+        if (err && err.type === 'popup_failed_to_open')
+          return no(new Error('Il telefono ha bloccato la finestra di Google.'));
+        no(new Error((err && (err.message || err.type)) || 'permesso negato'));
+      },
     });
     client.requestAccessToken();
   });
