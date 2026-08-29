@@ -374,11 +374,26 @@ function bloccoDrive(){
       il permesso <b>drive.file</b>: vede soltanto i file che crea lei, del resto del tuo Drive non
       sa niente. Il codice non è un segreto — nelle applicazioni web sta in chiaro per costruzione.</div>`;
 
+  /* Un codice cliente ha una forma precisa: numeri, trattino, lettere, e
+     finisce in .apps.googleusercontent.com. Se non torna, l'errore che
+     Google restituisce è «OAuth client was not found» e non spiega niente. */
+  const forma = /^[0-9]{6,}-[a-z0-9]{10,}\.apps\.googleusercontent\.com$/.test(info.clientId);
+  const guaio = !forma
+    ? `<div class="avviso rosso">Questo non sembra un codice cliente. Deve avere questa forma:
+       <br><b style="font-family:var(--mono);font-size:11px">123456789012-abc…xyz.apps.googleusercontent.com</b>
+       <br>Controlla di aver copiato <b>ID client</b> e non il <i>client secret</i> né il numero di
+       progetto, e che sia di tipo <b>Applicazione web</b>. Con un codice diverso Google risponde
+       «OAuth client was not found».</div>`
+    : '';
+
   return `<div class="cfgriga">
       <input type="text" value="${e(info.clientId)}" data-az="drive-id:"
         style="font-family:var(--mono);font-size:11px">
       <button class="interr ${d.collegato ? 'on' : ''}" title="${d.collegato ? 'collegato' : 'non collegato'}"
         data-az="drive-collega:">${d.collegato ? '✓' : '○'}</button></div>
+    <div class="nota" style="font-family:var(--mono);font-size:11px;word-break:break-all;margin:4px 2px">
+      ${e(info.clientId)} <b>· ${info.clientId.length} caratteri ${forma ? '· forma giusta' : '· forma sbagliata'}</b></div>
+    ${guaio}
     ${d.ultimo
       ? `<div class="avviso">Ultima copia su Drive <b>${quando(d.ultimo)}</b>${
           d.file ? ' · ' + e(d.file) : ''}. Nella cartella <b>Serra — backup</b>, ne restano le ultime venti.</div>`
