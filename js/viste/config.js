@@ -278,10 +278,12 @@ function cfgDati(){
       È l'unica copia che sopravvive a questo dispositivo: le istantanee qui sotto stanno dentro
       l'archivio e muoiono con lui.</div>
 
-    <div class="cfgtit" style="margin-top:22px">istantanee locali · ${info.istantanee.length}</div>
+    <div class="cfgtit" style="margin-top:22px">annulla · ${info.istantanee.length} istantanee</div>
     ${ist}
-    <div class="nota">L'app ne prende una da sola una volta al giorno, e sempre prima di un
-      import o di un ripristino.</div>
+    <div class="nota">Non è un backup, è il tasto <i>annulla</i> dell'app: sta dentro l'archivio e
+      muore con lui. Serve quando sbagli qualcosa in serra e non hai rete, o quando la copia su
+      Drive è più vecchia del lavoro di stamattina. L'app ne prende una da sola ogni giorno, e
+      sempre prima di un import o di un ripristino.</div>
 
     <div class="cfgtit" style="margin-top:22px">versione dell'app</div>
     <div class="cfgriga"><span style="flex:1;font-family:var(--mono);font-size:13px">${e(info.versione)}</span>
