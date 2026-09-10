@@ -1,33 +1,90 @@
 /* SERRA · scheda gruppo — le quattro azioni, e la storia di questo gruppo. */
-import { S, registra, vai, gruppo, classe, lotto, qta, costo, perPianta, nomeGruppo } from '../stato.js';
-import { $, e, eur, num, dataIT, disegna, testa, vaso, etichette, nascondiBarra } from '../ui.js';
+import * as O from '../operazioni.js';
+import { S, registra, vai, rendi, ricarica, gruppo, classe, lotto, qta, costo, perPianta, nomeGruppo,
+         tipoInt, lavorazioni } from '../stato.js';
+import { $, e, eur, num, dataIT, disegna, testa, vaso, etichette, nascondiBarra, chiedi, brindisi } from '../ui.js';
 
-const SEGNI = { apertura:'+', attecchimento:'+', rettifica:'+', perdita:'−',
-                vendita:'−', ceduto:'−', trasferimento:'↔' };
-
+/* La storia si legge per operazioni: un rinvaso scrive una perdita, un
+   trasferimento e una lavorazione, e sono una cosa sola. Si annulla
+   tutta insieme o niente. Le righe scritte prima che esistessero le
+   operazioni fanno operazione da sole. */
 function storia(g){
   const righe = [
     ...S.movimenti.filter(m => m.gruppo === g.id || m.gruppoDa === g.id || m.gruppoA === g.id)
-      .map(m => ({ data: m.data, ord: m.creato,
-        segno: m.gruppoDa === g.id ? '−' : m.gruppoA === g.id ? '+' : SEGNI[m.tipo] || '·',
-        classe: (m.qta < 0 || m.gruppoDa === g.id) ? 'meno' : 'piu',
+      .map(m => ({ data: m.data, ord: m.creato, op: m.operazione || 'm:' + m.id,
+        chiave: m.operazione ? 'op:' + m.operazione : 'm:' + m.id,
+        storno: m.storna != null, annullata: S.stornati.has('m' + m.id),
+        segno: m.gruppoDa === g.id ? (m.qta < 0 ? '+' : '−') : m.gruppoA === g.id ? (m.qta < 0 ? '−' : '+') : m.qta > 0 ? '+' : m.qta < 0 ? '−' : '·',
+        classe: (m.qta < 0) !== (m.gruppoDa === g.id) ? 'meno' : 'piu',
         tag: m.tipo,
         txt: m.tipo === 'trasferimento'
-          ? `<b>${m.qta}</b> piante ${m.gruppoDa === g.id ? 'uscite' : 'entrate'}` +
-            (m.costo ? ` · ${eur(m.gruppoDa === g.id ? -m.costo : m.costo)} di costo` : '')
+          ? `<b>${Math.abs(m.qta)}</b> piante ${(m.gruppoDa === g.id) !== (m.qta < 0) ? 'uscite' : 'entrate'}` +
+            (m.costo ? ` · ${eur(Math.abs(m.costo))} di costo` : '')
           : `<b>${m.qta > 0 ? '+' : ''}${m.qta}</b> piante` +
-            (m.valore ? ` · incasso ${eur(m.valore)}` : '') })),
+            (m.valore ? ` · incasso ${m.valore < 0 ? 'restituito ' : ''}${eur(Math.abs(m.valore))}` : '') })),
     ...S.eventi.filter(x => x.gruppo === g.id).map(x => ({
-      data: x.data, ord: x.creato, segno: '●', classe: '', tag: x.tipo,
+      data: x.data, ord: x.creato, op: x.operazione || 'e:' + x.id,
+      chiave: x.operazione ? 'op:' + x.operazione : 'e:' + x.id,
+      storno: x.storna != null, annullata: S.stornati.has('e' + x.id),
+      segno: '●', classe: '', tag: (tipoInt(x.tipo) || { nome: x.tipo }).nome,
       txt: `${x.piante || ''} piante · ${num(x.ore)} h · ${eur((x.costoMateriali || 0) + (x.ore || 0) * (x.tariffa ?? 0))}` })),
   ].sort((a, b) => (b.ord || '').localeCompare(a.ord || ''));
-
   if (!righe.length) return '';
+
+  /* raggruppate per operazione, nell'ordine in cui sono avvenute */
+  const ops = [];
+  for (const r of righe){
+    let o = ops.find(x => x.op === r.op);
+    if (!o){ o = { op: r.op, chiave: r.chiave, data: r.data, righe: [] }; ops.push(o); }
+    o.righe.push(r);
+  }
+
   return `<div class="eyebrow" style="margin-top:26px">storia del gruppo</div>
-    <div class="storia">${righe.map(r => `<div class="voce">
-      <span class="segno ${r.classe}">${r.segno}</span>
-      <span class="txt"><span class="tag">${e(r.tag)}</span>
-        <span class="data">${dataIT(r.data)}</span>${r.txt}</span></div>`).join('')}</div>`;
+    ${ops.map(o => {
+      const storno = o.righe.some(r => r.storno), annullata = o.righe.every(r => r.annullata);
+      const azione = storno ? '<span class="pill gri">storno</span>'
+        : annullata ? '<span class="pill no">annullata</span>'
+        : `<button class="mini" data-annulla="${e(o.chiave)}">annulla</button>`;
+      return `<div class="storia operazione ${storno || annullata ? 'spenta' : ''}">
+        <div class="op-testa"><span class="data">${dataIT(o.data)}</span>${azione}</div>
+        ${o.righe.map(r => `<div class="voce">
+          <span class="segno ${r.classe}">${r.segno}</span>
+          <span class="txt"><span class="tag">${r.storno ? 'storno · ' : ''}${e(r.tag)}</span>${r.txt}</span></div>`).join('')}
+      </div>`;
+    }).join('')}`;
+}
+
+/* ---- annullare: prima si dice tutto quello che l'operazione ha toccato ---- */
+async function annulla(chiave){
+  const [tipo, id] = [chiave.slice(0, chiave.indexOf(':')), chiave.slice(chiave.indexOf(':') + 1)];
+  const arg = tipo === 'op' ? { operazione: id } : tipo === 'm' ? { movimento: +id } : { evento: +id };
+  const righe = await O.righeOperazione(arg);
+
+  const toccati = new Set();
+  righe.movimenti.forEach(m => [m.gruppo, m.gruppoDa, m.gruppoA].forEach(x => x != null && toccati.add(x)));
+  righe.eventi.forEach(x => toccati.add(x.gruppo));
+  const nomi = [...toccati].map(x => gruppo(x)).filter(Boolean)
+    .map(x => `${nomeGruppo(x)} · ${x.classe}`);
+  const cosa = [
+    ...righe.movimenti.map(m => m.tipo === 'trasferimento' ? `trasferimento di ${m.qta} piante`
+      : `${m.tipo} di ${Math.abs(m.qta)} piante${m.valore ? ' (incasso ' + eur(m.valore) + ')' : ''}`),
+    ...righe.eventi.map(x => `${(tipoInt(x.tipo) || { nome: x.tipo }).nome} · ${eur((x.costoMateriali || 0) + (x.ore || 0) * (x.tariffa ?? 0))}`),
+  ];
+  const unione = righe.eventi.some(x => x.dettagli && x.dettagli.unione);
+
+  const ok = await chiedi('Annullare questa operazione?',
+    `<b>${cosa.map(e).join('<br>')}</b><br><br>
+     ${nomi.length > 1 ? `Tocca ${nomi.length} gruppi: ${nomi.map(e).join(', ')}. Si annulla su tutti.<br><br>` : ''}
+     ${unione ? 'Le piante tornano al gruppo da cui venivano, ma le etichette cadute con l’unione non tornano.<br><br>' : ''}
+     Niente si cancella: accanto a ogni riga ne scrivo una uguale e contraria, e nella storia
+     restano tutte e due.`, 'Annulla operazione');
+  if (!ok) return;
+  try {
+    await O.storna(arg);
+    await ricarica();
+    brindisi('Operazione annullata');
+    rendi();
+  } catch (err){ brindisi(err.message); }
 }
 
 registra('gruppo', ({ id }) => {
@@ -54,7 +111,7 @@ registra('gruppo', ({ id }) => {
         ${etichette(g)}</div></div>
     <div class="cifre">
       <div class="cifra"><b>${n}</b><span>in questo vaso</span></div>
-      <div class="cifra"><b>${S.eventi.filter(x => x.gruppo === g.id).length}</b><span>lavorazioni</span></div>
+      <div class="cifra"><b>${lavorazioni(g.id)}</b><span>lavorazioni</span></div>
       <div class="cifra"><b>${eur(perPianta(g))}</b><span>costo/pianta</span></div></div>
     ${azioni}
     <button class="linkotto" id="v-lotto">Vedi tutto il lotto ›</button>
@@ -66,4 +123,5 @@ registra('gruppo', ({ id }) => {
   document.querySelectorAll('.azione[data-a]').forEach(b =>
     b.onclick = () => vai('flusso', { id: g.id, tipo: b.dataset.a }));
   $('v-lotto').onclick = () => vai('lotto', { codice: g.lotto });
+  document.querySelectorAll('[data-annulla]').forEach(b => b.onclick = () => annulla(b.dataset.annulla));
 });

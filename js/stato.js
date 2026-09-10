@@ -20,6 +20,13 @@ export async function ricarica(){
   const [inv, giro] = await Promise.all([db.meta.get('ultimoInventario'), db.meta.get('inventario')]);
   S.ultimoInventario = inv ? inv.valore : null;
   S.inventarioInCorso = giro ? giro.valore : null;
+  /* le righe annullate da uno storno, e le operazioni a cui appartenevano */
+  S.stornati = new Set([
+    ...movimenti.filter(m => m.storna != null).map(m => 'm' + m.storna),
+    ...eventi.filter(e => e.storna != null).map(e => 'e' + e.storna)]);
+  S.opAnnullate = new Set([
+    ...movimenti.filter(m => m.operazione && S.stornati.has('m' + m.id)).map(m => m.operazione),
+    ...eventi.filter(e => e.operazione && S.stornati.has('e' + e.id)).map(e => e.operazione)]);
   S.q = C.saldi(movimenti);
   S.c = C.costi(movimenti, eventi, cfg.impostazioni.tariffaOraria);
   /* un gruppo con giacenza zero è chiuso: la cache in tabella si allinea
@@ -27,6 +34,8 @@ export async function ricarica(){
   for (const g of gruppi){
     const q = S.q.get(g.id) || 0;
     if (q <= 0 && g.aperto){ g.aperto = false; await db.gruppi.update(g.id, { aperto: false }); }
+    /* uno storno può ridare piante a un gruppo chiuso: allora torna aperto */
+    else if (q > 0 && !g.aperto){ g.aperto = true; await db.gruppi.update(g.id, { aperto: true }); }
   }
   if (typeof window !== 'undefined') window.dispatchEvent(new Event('serra:scritto'));
 }
@@ -46,6 +55,13 @@ export const imp      = k => S.cfg.impostazioni[k];
 export const aperti   = () => S.gruppi.filter(g => g.aperto);
 
 export const nomeGruppo = g => g.lotto + (g.suffisso ? ' · ' + g.suffisso : '');
+
+/* una lavorazione conta se non è uno storno e non è stata stornata */
+export const eventoVivo = e => e.storna == null && !S.stornati.has('e' + e.id);
+export const movimentoVivo = m => m.storna == null && !S.stornati.has('m' + m.id);
+/* un conteggio fatto dentro un'operazione annullata non vale più */
+export const conteggioVivo = c => !c.operazione || !S.opAnnullate.has(c.operazione);
+export const lavorazioni = id => S.eventi.filter(x => x.gruppo === id && eventoVivo(x)).length;
 
 /* ---- navigazione ---- */
 const viste = {};

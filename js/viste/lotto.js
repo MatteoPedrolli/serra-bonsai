@@ -2,6 +2,15 @@
 import { S, registra, vai, classe, lotto, qta, costo, ordineCl, nomeGruppo } from '../stato.js';
 import { $, e, eur, num, dataIT, disegna, testa, etichette, nascondiBarra } from '../ui.js';
 
+/* «temperatura 12–24 °C · umidità 60–80 %», solo quello che c'è */
+function condizioni(c){
+  if (!c) return '';
+  const tratto = (min, max, u) => min != null && max != null ? `${min}–${max} ${u}`
+    : min != null ? `da ${min} ${u}` : max != null ? `fino a ${max} ${u}` : '';
+  return [['temperatura', tratto(c.tempMin, c.tempMax, '°C')], ['umidità', tratto(c.umidMin, c.umidMax, '%')]]
+    .filter(([, v]) => v).map(([k, v]) => k + ' ' + v).join(' · ');
+}
+
 const COL = ['#3F7D20', '#5B9A38', '#7CB55B', '#9CCF83', '#BCE3AA', '#6E8F5A'];
 
 registra('lotto', ({ codice }) => {
@@ -61,13 +70,15 @@ registra('lotto', ({ codice }) => {
       media <b>${eur(vive ? costoTot / vive : 0)}</b> a pianta viva · ${num(ore)} h di lavoro.
       ${incasso ? `Incassato finora <b>${eur(incasso)}</b>.` : ''}</div>
     ${L.provenienza ? `<div class="nota">Provenienza: ${e(L.provenienza)}</div>` : ''}
-    ${L.condizioni && (L.condizioni.tempMin || L.condizioni.umidMin)
-      ? `<div class="nota">Condizioni registrate: ${e(JSON.stringify(L.condizioni))} — servono a
-         confrontare annate diverse, non a dividere le prove. § 6.3</div>` : ''}
+    ${condizioni(L.condizioni)
+      ? `<div class="nota">Condizioni: ${condizioni(L.condizioni)} — servono a confrontare annate
+         diverse, non a dividere le prove. § 6.3</div>` : ''}
     ${L.note ? `<div class="nota">${e(L.note)}</div>` : ''}
     ${elencoChiusi}
+    <button class="linkotto" id="m-lotto" style="margin-top:22px">Modifica specie, provenienza e note ›</button>
   </div>`);
 
   document.querySelectorAll('[data-g]').forEach(b =>
     b.onclick = () => vai('gruppo', { id: +b.dataset.g }));
+  document.getElementById('m-lotto').onclick = () => vai('modificaLotto', { codice });
 });

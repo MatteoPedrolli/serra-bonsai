@@ -18,6 +18,7 @@ import './viste/config.js';
 import './viste/analisi.js';
 import './viste/intervento.js';
 import './viste/inventario.js';
+import './viste/modificaLotto.js';
 import { indietroPasso } from './viste/flusso.js';
 import { indietroIntervento } from './viste/intervento.js';
 import { indietroInventario } from './viste/inventario.js';

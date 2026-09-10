@@ -2,14 +2,14 @@
    Dove il confronto non è valido l'app lo dice, invece di restituire un
    numero che sembra una risposta. § 6.1 */
 import * as C from '../calcoli.js';
-import { S, registra, rendi, classe, lotto, qta, costo, materiale, tipoInt } from '../stato.js';
+import { S, registra, rendi, classe, lotto, qta, costo, materiale, tipoInt, conteggioVivo } from '../stato.js';
 import { e, eur, num, disegna, testa, nascondiBarra } from '../ui.js';
 
 const SEZIONI = [['resa', 'Resa'], ['costo', 'Costo'], ['margine', 'Margine'],
                  ['materiali', 'Materiali'], ['ore', 'Ore']];
 let sez = 'resa', variabileScelta = null, specieScelta = '', annoScelto = '';
 
-const ultimoVigore = id => S.conteggi.filter(c => c.gruppo === id && c.vigore).pop()?.vigore || null;
+const ultimoVigore = id => S.conteggi.filter(c => c.gruppo === id && c.vigore && conteggioVivo(c)).pop()?.vigore || null;
 const anni = () => [...new Set(S.lotti.map(l => l.anno))].sort();
 const specie = () => [...new Set(S.lotti.map(l => l.specie))].sort();
 
@@ -124,6 +124,9 @@ function aMargine(){
     r.n += -v.qta; r.inc += v.valore || 0; r.cst += -(v.costo || 0);
     m.set(v.lotto, r);
   });
+  /* una vendita annullata lascia il lotto a zero: non è una vendita */
+  for (const [k, r] of m) if (r.n === 0) m.delete(k);
+  if (!m.size) return filtri() + '<div class="vuoto">Nessuna vendita, al netto degli storni.</div>';
   const tot = [...m.values()].reduce((s, r) => ({ n: s.n + r.n, inc: s.inc + r.inc, cst: s.cst + r.cst }),
     { n: 0, inc: 0, cst: 0 });
   return filtri()

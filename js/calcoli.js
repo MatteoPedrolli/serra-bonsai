@@ -126,8 +126,11 @@ export function resa(gruppi, movimenti, saldi){
       if (dentro.has(m.gruppoA) && !dentro.has(m.gruppoDa)) entrate += m.qta;
       else if (dentro.has(m.gruppoDa) && !dentro.has(m.gruppoA)) uscite += m.qta;
     } else if (dentro.has(m.gruppo)){
-      if (m.tipo === 'vendita') vendute -= m.qta;
-      else if (m.qta > 0) entrate += m.qta;
+      /* per tipo, non per segno: lo storno di una perdita ha qta positiva ma
+         non è un ingresso, e quello di una rettifica deve toglierla */
+      if (m.tipo === 'vendita' || m.tipo === 'ceduto') vendute -= m.qta;
+      else if (m.tipo === 'perdita') { /* resta nei saldi: le vive calano da sole */ }
+      else entrate += m.qta;
     }
   }
   const vive = gruppi.reduce((s, g) => s + (saldi.get(g.id) || 0), 0);

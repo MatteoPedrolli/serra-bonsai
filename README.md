@@ -1,6 +1,9 @@
-# SERRA
+# VIVAIO
 
 App di gestione della produzione bonsai: dalla talea alla vendita.
+(Fino alla 2.0 si chiamava Serra: l'archivio interno, la cartella su Drive
+e i nomi dei file restano `serra`, perché rinominarli vorrebbe dire
+ripartire da un archivio vuoto.)
 File statici, nessun backend, dati su IndexedDB. Schema **1.0**.
 
 **In linea: https://matteopedrolli.github.io/serra-bonsai/**
@@ -40,7 +43,8 @@ Da lì funziona senza rete.
 | `js/db.js` | i dodici archivi Dexie e i semi di configurazione |
 | `js/calcoli.js` | funzioni pure: giacenze, costi, substrato, leggibilità delle prove |
 | `js/operazioni.js` | i piani dei quattro flussi e l'unica funzione che scrive |
-| `js/backup.js` | export/import JSON e promemoria |
+| `js/backup.js` | export/import JSON, istantanee, promemoria |
+| `js/drive.js` | copia automatica su Google Drive |
 | `js/stato.js` | memoria di lavoro e navigazione |
 | `js/viste/` | una vista per file, grafica del prototipo v3 |
 
@@ -86,9 +90,10 @@ Serve un codice cliente OAuth, da creare una volta:
    in Config → Dati → *copia automatica su Drive*
 
 Lo scope richiesto è `drive.file`: l'app vede solo i file che ha creato
-lei, quindi Google non richiede alcuna verifica. Le copie finiscono nella
-cartella **Serra — backup**, una per invio, con la data nel nome; restano
-le ultime venti.
+lei, quindi Google non richiede alcuna verifica. La copia è un file solo,
+`serra.json` nella cartella **Serra — backup**, riscritto ogni N giorni
+(Impostazioni → Dati, predefinito 3) se ci sono righe nuove. Drive ne
+conserva tutte le versioni: tasto destro → *Gestisci versioni*.
 
 Il permesso dura un'ora e si rinnova in silenzio finché la sessione
 Google del telefono è viva. Quando non ci riesce, l'app smette di
@@ -102,8 +107,23 @@ insistere e aspetta un tocco in Config: non apre finestre a sorpresa.
 - [x] **Fase 4** — vista Lotto e le cinque interrogazioni di Analisi
 - [x] **Fase 5** — migrazione dal foglio «Bonsai Inventario DB» (`dev/migrazione.mjs`)
 
-Restano aperte le questioni del § 12: filo per classe di vaso, suffisso di
-grado, litri per vaso reali, prezzi e preset veri.
+**2.0**
+
+- [x] Home a pulsanti; **Nursery** (gruppi in vaschetta) e **Produzione** (in vaso)
+  separate. Nessun dato nuovo: la zona la dice la classe del vaso, il § 11 resta chiuso
+- [x] **Intervento** su un gruppo, un lotto, una zona o tutto il vivaio: una
+  lavorazione per gruppo, totali al centesimo
+- [x] **Inventario** guidato nell'ordine dei bancali, interrompibile, scrittura
+  unica alla fine preceduta da un'istantanea
+- [x] **Storno**: ogni salvataggio è un'operazione con un codice; annullarla scrive
+  le righe contrarie e nella storia restano entrambe
+- [x] Modifica dell'anagrafica dei lotti (il codice e le quantità no)
+- [x] Impostazioni: i costi in un posto, **filo per classe di vaso** (§ 12.1),
+  miscele eliminabili
+- [x] Stile più morbido, tutto in un blocco in fondo a `css/serra.css`
+
+Restano aperte le questioni del § 12: suffisso di grado, litri per vaso
+reali, prezzi e preset veri.
 
 ## Manutenzione
 

@@ -2,7 +2,7 @@
    Nursery: le vaschette. Produzione: tutto quello che sta in vaso.
    Una riga per gruppo, non per lotto: lo stesso lotto compare più volte
    se le sue piante stanno in classi diverse. Non è un errore, è il punto. */
-import { S, registra, vai, rendi, aperti, classe, lotto, qta, ordineCl, nomeGruppo } from '../stato.js';
+import { S, registra, vai, rendi, aperti, classe, lotto, qta, ordineCl, nomeGruppo, lavorazioni } from '../stato.js';
 import { $, e, disegna, testa, vaso, etichette, nascondiBarra } from '../ui.js';
 
 const ZONE = {
@@ -15,7 +15,6 @@ const ZONE = {
 const ordine = { nursery: 'lotto', produzione: 'vaso' };
 let filtro = '';
 
-const lavorazioni = id => S.eventi.filter(x => x.gruppo === id).length;
 
 registra('elenco', ({ zona = 'produzione' } = {}) => {
   const Z = ZONE[zona] || ZONE.produzione;

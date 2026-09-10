@@ -118,7 +118,8 @@ export function pianoRinvaso(p){
                   tariffa,
                   dettagli: { classeDa: gruppo.classe, classeA: d.classe,
                               miscela: miscela ? miscela.id : null, quote: { ...quote },
-                              litriTotali: r2(litriDi(d)), consumi, costoVasi: r2(vasiD) },
+                              litriTotali: r2(litriDi(d)), consumi, costoVasi: r2(vasiD),
+                              unione: !!d.unisci },
                   note, creato: adesso() });
   });
 
@@ -193,7 +194,15 @@ async function trovaOCrea(d){
   });
 }
 
+/* Ogni salvataggio è un'operazione: tutte le righe che scrive portano lo
+   stesso codice. È quello che permette di annullarla tutta insieme — un
+   rinvaso tocca tre gruppi e scrive sei righe, e annullarne mezzo sarebbe
+   peggio che non annullarlo. */
+export const nuovaOperazione = () =>
+  'op' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
 export async function esegui(piano){
+  const operazione = piano.operazione || nuovaOperazione();
   return db.transaction('rw', db.gruppi, db.movimenti, db.eventi, db.conteggi, async () => {
     const idDest = [];
     for (const d of piano.destinazioni) idDest[d.i] = await trovaOCrea(d);
@@ -201,14 +210,16 @@ export async function esegui(piano){
     for (const m of piano.movimenti){
       const { destIndex, ...riga } = m;
       if (destIndex != null) riga.gruppoA = idDest[destIndex];
-      await db.movimenti.add(riga);
+      await db.movimenti.add({ ...riga, operazione });
     }
     for (const e of piano.eventi){
       const { destIndex, ...riga } = e;
       if (destIndex != null) riga.gruppo = idDest[destIndex];
-      await db.eventi.add(riga);
+      await db.eventi.add({ ...riga, operazione });
     }
-    for (const c of piano.conteggi) await db.conteggi.add(c);
+    for (const c of piano.conteggi) await db.conteggi.add({ ...c, operazione });
+    /* un gruppo che torna ad avere piante, dopo uno storno, si riapre */
+    for (const id of piano.riapri || []) await db.gruppi.update(id, { aperto: true });
     for (const id of piano.chiudi) await db.gruppi.update(id, { aperto: false });
 
     /* Rimasto solo, un gruppo non ha più bisogno del suffisso: torna a
@@ -221,14 +232,75 @@ export async function esegui(piano){
         .filter(x => x.aperto && x.id !== g.id);
       if (!fratelli.length) await db.gruppi.update(g.id, { suffisso: '' });
     }
-    return idDest;
+    return { idDest, operazione };
   });
+}
+
+/* ============================================================
+   STORNO — correggere senza cancellare · § 1
+   Nessuna riga si riscrive. Annullare un'operazione vuol dire scriverne
+   un'altra uguale e contraria: stesso tipo, quantità e costi col segno
+   rovesciato, e il riferimento a quella che annulla. Le somme tornano
+   come prima, e nella storia restano tutte e due: l'errore e la sua
+   correzione.
+   ============================================================ */
+export function pianoStorno({ movimenti = [], eventi = [], data, motivo = '' }){
+  const nota = 'storno' + (motivo ? ' · ' + motivo : '');
+  const neg = v => (v == null ? v : -v);
+  const consumi = c => c ? Object.fromEntries(Object.entries(c).map(([k, v]) => [k, -v])) : c;
+  return {
+    tipo: 'storno', destinazioni: [], conteggi: [], chiudi: [],
+    movimenti: movimenti.map(m => {
+      const { id, operazione, creato, ...r } = m;
+      return { ...r, data, qta: -m.qta, costo: neg(m.costo || 0), valore: neg(m.valore),
+               storna: id, note: nota, creato: adesso() };
+    }),
+    eventi: eventi.map(e => {
+      const { id, operazione, creato, ...r } = e;
+      return { ...r, data, ore: neg(e.ore || 0), costoMateriali: neg(e.costoMateriali || 0),
+               piante: e.piante, storna: id, note: nota, creato: adesso(),
+               dettagli: { ...(e.dettagli || {}), consumi: consumi(e.dettagli && e.dettagli.consumi),
+                           costoVasi: neg(e.dettagli && e.dettagli.costoVasi) } };
+    }),
+  };
+}
+
+/* Le righe di un'operazione: tutte quelle col suo codice. Le righe scritte
+   prima che esistessero i codici si annullano una alla volta. */
+export async function righeOperazione({ operazione, movimento, evento }){
+  if (operazione) return {
+    movimenti: await db.movimenti.filter(m => m.operazione === operazione).toArray(),
+    eventi: await db.eventi.filter(e => e.operazione === operazione).toArray(),
+  };
+  return {
+    movimenti: movimento != null ? [await db.movimenti.get(movimento)].filter(Boolean) : [],
+    eventi: evento != null ? [await db.eventi.get(evento)].filter(Boolean) : [],
+  };
+}
+
+export async function storna(chiave, { data, motivo } = {}){
+  const righe = await righeOperazione(chiave);
+  if (!righe.movimenti.length && !righe.eventi.length) throw new Error('Operazione non trovata.');
+  if ([...righe.movimenti, ...righe.eventi].some(r => r.storna != null))
+    throw new Error('Uno storno non si storna: se serve, si riscrive l’operazione giusta.');
+  const gia = new Set([
+    ...(await db.movimenti.filter(m => m.storna != null).toArray()).map(m => 'm' + m.storna),
+    ...(await db.eventi.filter(e => e.storna != null).toArray()).map(e => 'e' + e.storna),
+  ]);
+  if (righe.movimenti.some(m => gia.has('m' + m.id)) || righe.eventi.some(e => gia.has('e' + e.id)))
+    throw new Error('Questa operazione è già stata annullata.');
+
+  const piano = pianoStorno({ ...righe, data: data || new Date().toISOString().slice(0, 10), motivo });
+  /* i gruppi che l'operazione aveva chiuso tornano ad avere piante: si riaprono */
+  piano.riapri = [...new Set(righe.movimenti.flatMap(m => [m.gruppo, m.gruppoDa]).filter(x => x != null))];
+  return esegui(piano);
 }
 
 /* ---------- NUOVO LOTTO · § 5.7 ---------- */
 /* Un solo form: il lotto, le sue vaschette, il movimento di apertura.
    Con due variabili × due valori nascono quattro vaschette incrociate. */
 export async function creaLotto({ lotto, inserite, prove = [], costoIniziale = 0, data }){
+  const operazione = nuovaOperazione();
   return db.transaction('rw', db.lotti, db.gruppi, db.movimenti, async () => {
     await db.lotti.add({ ...lotto, inserite, creato: adesso() });
 
@@ -246,7 +318,7 @@ export async function creaLotto({ lotto, inserite, prove = [], costoIniziale = 0
       const id = await db.gruppi.add({ lotto: lotto.id, classe: 'VAS', suffisso,
         prove: combinazioni[k], storicoProve: [], aperto: true, creato: adesso() });
       await db.movimenti.add({ data, tipo: 'apertura', lotto: lotto.id, gruppo: id,
-        qta: n, costo: r2(costoIniziale * n / Math.max(inserite, 1)), note: '', creato: adesso() });
+        qta: n, costo: r2(costoIniziale * n / Math.max(inserite, 1)), note: '', creato: adesso(), operazione });
       ids.push(id);
     }
     return ids;

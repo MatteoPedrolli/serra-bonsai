@@ -389,3 +389,12 @@ body{background:var(--pomice)}
   color:var(--fumo);margin-top:4px}
 .promemoria button{text-transform:none;letter-spacing:.01em;font-size:13.5px;
   background:rgba(255,255,255,.55);border:0;border-radius:999px;padding:7px 13px}
+
+/* ---- storia per operazioni: ognuna si annulla intera ---- */
+.operazione{margin-top:8px}
+.operazione.spenta{opacity:.55}
+.op-testa{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 14px 0;font-size:12px}
+.op-testa .data{font-family:var(--mono);color:var(--fumo)}
+.op-testa .mini{padding:4px 11px;font-size:12px}
+.operazione .voce{padding:9px 14px}
