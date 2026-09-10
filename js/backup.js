@@ -8,7 +8,7 @@
    3. il file su Drive    — l'unica che sopravvive al telefono
    Le prime due riducono gli incidenti. Solo la terza è un backup.
    ============================================================ */
-import { db, SCHEMA, TABELLE_DATI, TABELLE_CONFIG, adesso } from './db.js';
+import { db, SCHEMA, TABELLE_DATI, TABELLE_CONFIG, adesso, normalizzaConfig } from './db.js';
 
 /* ---------- 1 · spazio protetto ----------
    Senza questo, il browser considera l'archivio «cache» e può buttarlo
@@ -212,6 +212,8 @@ async function applica(d){
     await db.meta.put({ chiave: 'schema', valore: d.schema });
     await db.meta.put({ chiave: 'ultimoImport', valore: adesso() });
   });
+  /* un backup di una versione vecchia deve entrare senza buchi */
+  await normalizzaConfig();
   return conta(d);
 }
 

@@ -23,6 +23,8 @@ const prossimaClasse = c => {
 const smistate = () => Object.values(f.dest).reduce((s, n) => s + n, 0);
 const resto = () => f.contate - smistate();
 const miscelaCorrente = () => S.cfg.miscele.find(m => m.id === f.miscelaId) || null;
+/* una miscela eliminata sparisce dalle scelte, ma i rinvasi passati la ricordano */
+const miscele = () => S.cfg.miscele.filter(m => m.attiva !== false);
 
 /* ---------- avvio ---------- */
 registra('flusso', ({ id, tipo }) => {
@@ -34,7 +36,7 @@ registra('flusso', ({ id, tipo }) => {
 
 function avvia(g, tipo){
   const n = qta(g);
-  const mis = S.cfg.miscele.find(m => m.id === ultimaMiscela) || S.cfg.miscele[0];
+  const mis = miscele().find(m => m.id === ultimaMiscela) || miscele()[0];
   f = { tipo, gruppo: g, attese: n, contate: n, dest: {},
         miscelaId: mis?.id || null, quote: { ...(ultimeQuote || mis?.quote || {}) },
         costoVasi: 0, ore: ultimeOre || 0, note: '', vigore: 0,
@@ -173,7 +175,7 @@ function passoRinvaso(){
     const disponibili = S.cfg.materiali.filter(m => m.attivo && f.quote[m.id] === undefined);
     const aggiunte = disponibili.length ? `<div class="passo-tasti">${disponibili.map(m =>
       `<button class="mini" data-az="agg-mat:${m.id}">+ ${e(m.nome)}</button>`).join('')}</div>` : '';
-    const bott = S.cfg.miscele.map(m =>
+    const bott = miscele().map(m =>
       `<button class="mini ${f.miscelaId === m.id ? 'on' : ''}" data-az="miscela:${m.id}">${e(m.nome)}</button>`).join('');
     const vasi = Object.entries(f.dest).map(([c, n]) => `${n}×${e(c)}`).join(' + ');
     const mis = miscelaCorrente();
@@ -391,8 +393,10 @@ function valoriIntervento(){
   if (!t) return { ore: 0, mat: 0 };
   if (t.chiede === 'ore') return { ore: f.ore, mat: 0 };
   const p = t.chiede === 'scelta' ? (t.opzioni || []).find(o => o.k === f.scelta) || {} : t;
+  /* il filo si paga per classe di vaso: legare un 24 non costa come un 12 */
+  const matPianta = t.filoPerClasse ? (classe(g.classe).filoPerPianta ?? p.matPerPianta ?? 0) : (p.matPerPianta || 0);
   return { ore: f.oreTocco ? f.ore : +((p.orePerPianta || 0) * n).toFixed(2),
-           mat: f.matTocco ? f.materiali : +((p.matPerPianta || 0) * n).toFixed(2) };
+           mat: f.matTocco ? f.materiali : +(matPianta * n).toFixed(2) };
 }
 
 function passoIntervento(){

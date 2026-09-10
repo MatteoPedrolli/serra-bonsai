@@ -5,16 +5,16 @@ import * as D from '../drive.js';
 import { S, registra, rendi, ricarica, imp } from '../stato.js';
 import { $, e, eur, num, disegna, testa, vaso, brindisi, chiedi, nascondiBarra } from '../ui.js';
 
-const SEZIONI = [['materiali', 'Materiali'], ['miscele', 'Miscele'], ['vasi', 'Vasi'],
+const SEZIONI = [['costi', 'Costi'], ['miscele', 'Miscele'], ['vasi', 'Vasi'],
                  ['interventi', 'Interventi'], ['variabili', 'Variabili'], ['dati', 'Dati']];
-let sezione = 'materiali', miscelaAperta = null;
+let sezione = 'costi', miscelaAperta = null;
 
 const salva = async (tab, riga) => { await db[tab].put(riga); await ricarica(); rendi(); };
 
 registra('config', () => {
   testa({ titolo: 'Impostazioni', indietro: true });
   nascondiBarra();
-  const corpo = { materiali: cfgMateriali, miscele: cfgMiscele, vasi: cfgVasi,
+  const corpo = { costi: cfgCosti, miscele: cfgMiscele, vasi: cfgVasi,
                   interventi: cfgInterventi, variabili: cfgVariabili, dati: cfgDati }[sezione]();
   disegna(`<div class="sezioni">${SEZIONI.map(([k, nm]) =>
       `<button class="mini ${sezione === k ? 'on' : ''}" data-sez="${k}">${nm}</button>`).join('')}</div>
@@ -35,9 +35,34 @@ function collega(){
   });
 }
 
-/* ---------- materiali ---------- */
-function cfgMateriali(){
-  return '<div class="cfgtit">listino · prezzo al litro</div>'
+/* ---------- costi: tutte le costanti che fanno un prezzo, in un posto ---------- */
+function cfgCosti(){
+  const legate = S.cfg.classi.filter(c => c.attiva && c.id !== 'VAS');
+  return `<div class="cfgtit">lavoro</div>
+    <div class="cfgriga"><input type="text" value="Costo di un'ora" readonly>
+      <input type="number" step="1" min="0" value="${+imp('tariffaOraria')}" data-az="set:tariffaOraria"><span class="um">€/h</span></div>
+    <div class="cfgriga"><input type="text" value="Moltiplicatore del prezzo" readonly>
+      <input type="number" step="0.5" min="1" value="${+imp('moltiplicatorePrezzo')}" data-az="set:moltiplicatorePrezzo"><span class="um">×</span></div>
+    <div class="nota">L'ora vale per gli interventi <i>futuri</i>: ogni lavorazione già scritta
+      conserva il costo del giorno. Il moltiplicatore fa il prezzo suggerito a partire dal costo
+      per pianta: è una proposta, non un vincolo.</div>
+
+    <div class="cfgtit" style="margin-top:22px">filo per la legatura · a pianta, per vaso</div>`
+    + legate.map(c => `<div class="cfgriga">
+        ${vaso(c, 30)}
+        <input type="text" value="${e(c.etichetta)}" readonly>
+        <input type="number" step="0.05" min="0" value="${+(c.filoPerPianta || 0)}" data-az="cl-filo:${c.id}">
+        <span class="um">€/pi</span></div>`).join('')
+    + `<div class="nota">Quanto filo costa legare una pianta in quel vaso. La legatura lo moltiplica
+      per le piante del gruppo e ti lascia correggere. I valori iniziali sono stime: mettici i tuoi.</div>
+
+    <div class="cfgtit" style="margin-top:22px">terricci · prezzo al litro</div>`
+    + terricci();
+}
+AZ['cl-filo'] = (id, v) => salva('classi', { ...cl(id), filoPerPianta: +v || 0 });
+
+function terricci(){
+  return ''
     + S.cfg.materiali.map(m => `<div class="cfgriga ${m.attivo ? '' : 'spenta'}">
         <input type="text" value="${e(m.nome)}" data-az="mat-nome:${m.id}">
         <input type="number" step="0.05" min="0" value="${+m.prezzoLitro}" data-az="mat-eur:${m.id}">
@@ -54,8 +79,10 @@ AZ['mat-on']   = id => { const m = S.cfg.materiali.find(x => x.id === id); salva
 AZ['mat-nuovo'] = () => salva('materiali', { id: 'm' + Date.now(), nome: 'Nuovo materiale', prezzoLitro: 0, attivo: true });
 
 /* ---------- miscele ---------- */
+const miscAttive = () => S.cfg.miscele.filter(m => m.attiva !== false);
+
 function cfgMiscele(){
-  const r = S.cfg.miscele.find(x => x.id === miscelaAperta) || S.cfg.miscele[0];
+  const r = miscAttive().find(x => x.id === miscelaAperta) || miscAttive()[0];
   if (!r) return `<div class="nota">Nessuna miscela.</div>
     <button class="aggiungi" data-az="mix-nuova:">+ Nuova miscela</button>`;
   miscelaAperta = r.id;
@@ -63,7 +90,7 @@ function cfgMiscele(){
   const somma = ids.reduce((s, k) => s + (+r.quote[k] || 0), 0) || 1;
   const disp = S.cfg.materiali.filter(m => m.attivo && r.quote[m.id] === undefined);
 
-  return '<div class="scelte">' + S.cfg.miscele.map(x =>
+  return '<div class="scelte">' + miscAttive().map(x =>
       `<button class="mini ${x.id === r.id ? 'on' : ''}" data-az="mix-apri:${x.id}">${e(x.nome)}</button>`).join('')
     + '<button class="mini" data-az="mix-nuova:">+</button></div>'
     + `<div class="cfgriga"><input type="text" value="${e(r.nome)}" data-az="mix-nome:${r.id}">
@@ -80,8 +107,23 @@ function cfgMiscele(){
         `<button class="mini" data-az="mix-agg:${r.id}|${m.id}">+ ${e(m.nome)}</button>`).join('') + '</div>' : '')
     + `<div class="nota">Le parti sono proporzioni, non litri: l'app moltiplica per il volume del
        vaso di destinazione. Il segno 🔬 marca una miscela di prova — usandola, il rinvaso apre
-       un'etichetta sperimentale sui gruppi di destinazione.</div>`;
+       un'etichetta sperimentale sui gruppi di destinazione.</div>
+       <button class="aggiungi" data-az="mix-elimina:${r.id}">Elimina «${e(r.nome)}»</button>`;
 }
+AZ['mix-elimina'] = async id => {
+  const m = mix(id);
+  const usata = S.eventi.filter(x => x.dettagli && x.dettagli.miscela === id).length;
+  const ok = await chiedi('Eliminare la miscela?',
+    `<b>${e(m.nome)}</b> sparisce dalle scelte del rinvaso.${usata
+      ? ` I ${usata} rinvasi che l'hanno usata restano come sono: ogni rinvaso conserva le sue
+         quote e il suo costo.` : ''}`, 'Elimina');
+  if (!ok) return;
+  /* non si cancella: si spegne, così i rinvasi passati ne ricordano il nome */
+  await db.miscele.put({ ...m, attiva: false });
+  miscelaAperta = null;
+  await ricarica(); rendi();
+  brindisi('Miscela eliminata');
+};
 const mix = id => S.cfg.miscele.find(m => m.id === id);
 AZ['mix-apri']  = id => { miscelaAperta = id; rendi(); };
 AZ['mix-nome']  = (id, v) => salva('miscele', { ...mix(id), nome: v });
@@ -137,6 +179,9 @@ function cfgInterventi(){
           <input type="text" value="${e(o.k)}" data-az="ti-opz:${t.id}|${j}|k">
           <input type="number" step="0.01" min="0" value="${+o.matPerPianta}" data-az="ti-opz:${t.id}|${j}|matPerPianta"><span class="um">€/pi</span>
           <input type="number" step="0.005" min="0" value="${+o.orePerPianta}" data-az="ti-opz:${t.id}|${j}|orePerPianta"><span class="um">h/pi</span></div>`).join('');
+      else if (t.filoPerClasse) h += `<div class="cfgriga" style="margin-left:14px">
+        <span style="flex:1" class="um">filo: per vaso, in Costi</span>
+        <input type="number" step="0.05" min="0" value="${+t.orePerPianta}" data-az="ti-fisso:${t.id}|orePerPianta"><span class="um">h/pi</span></div>`;
       else h += `<div class="cfgriga" style="margin-left:14px">
         <span style="flex:1" class="um">preset</span>
         <input type="number" step="0.05" min="0" value="${+t.matPerPianta}" data-az="ti-fisso:${t.id}|matPerPianta"><span class="um">€/pi</span>
@@ -145,8 +190,7 @@ function cfgInterventi(){
     }).join('')
     + `<button class="aggiungi" data-az="ti-nuovo:">+ Aggiungi tipo</button>
        <div class="nota">I preset sono per pianta: l'app li moltiplica per le piante del gruppo e ti
-       lascia correggere. La legatura di un vaso da 24 consuma più filo di un 12 — se la differenza
-       pesa, questo campo va reso una tabella per classe di vaso. § 12.1</div>`;
+       lascia correggere. Il filo della legatura cambia col vaso: si imposta in Costi.</div>`;
 }
 const ti = id => S.cfg.tipiIntervento.find(t => t.id === id);
 AZ['ti-nome']  = (id, v) => salva('tipiIntervento', { ...ti(id), nome: v });
@@ -250,20 +294,13 @@ function cfgDati(){
         <button class="mini" data-az="ripristina:${x.id}">ripristina</button></div>`).join('')
     : '<div class="nota">Nessuna istantanea ancora.</div>';
 
-  return `<div class="cfgtit">costo del lavoro e prezzo</div>
-    <div class="cfgriga"><input type="text" value="Tariffa oraria" readonly>
-      <input type="number" step="1" min="0" value="${+imp('tariffaOraria')}" data-az="set:tariffaOraria"><span class="um">€/h</span></div>
-    <div class="cfgriga"><input type="text" value="Moltiplicatore prezzo" readonly>
-      <input type="number" step="0.5" min="1" value="${+imp('moltiplicatorePrezzo')}" data-az="set:moltiplicatorePrezzo"><span class="um">×</span></div>
-    <div class="cfgriga"><input type="text" value="Promemoria backup" readonly>
-      <input type="number" step="1" min="1" value="${+imp('giorniPromemoriaBackup')}" data-az="set:giorniPromemoriaBackup"><span class="um">gg</span></div>
-    <div class="nota">La tariffa vale per gli interventi <i>futuri</i>: ogni evento conserva la
-      tariffa del giorno in cui è stato registrato.</div>
-
-    <div class="cfgtit" style="margin-top:22px">dove stanno i dati</div>
+  return `<div class="cfgtit">dove stanno i dati</div>
     ${statoSpazio}
     <div class="nota">${e(copie)} · ${S.movimenti.length} movimenti, ${S.eventi.length} eventi,
       ${S.gruppi.length} gruppi.</div>
+
+    <div class="cfgriga"><input type="text" value="Avvisami dopo" readonly>
+      <input type="number" step="1" min="1" value="${+imp('giorniPromemoriaBackup')}" data-az="set:giorniPromemoriaBackup"><span class="um">gg</span></div>
 
     <div class="cfgtit" style="margin-top:22px">copia di sicurezza</div>
     ${B.condivisioneDisponibile()

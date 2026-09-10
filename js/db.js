@@ -39,16 +39,16 @@ export const TABELLE_DATI   = ['lotti','gruppi','movimenti','eventi','conteggi']
 
 export const SEMI = {
   classi: [
-    { id:'VAS', etichetta:'vaschetta', mm: 60, tondo:false, litriPerVaso:0.10, attiva:true, ordine: 0 },
-    { id:'10T', etichetta:'10 tondo',  mm:100, tondo:true,  litriPerVaso:0.35, attiva:true, ordine:10 },
-    { id:'10Q', etichetta:'10 quadro', mm:100, tondo:false, litriPerVaso:0.45, attiva:true, ordine:20 },
-    { id:'12',  etichetta:'12',        mm:120, tondo:false, litriPerVaso:0.75, attiva:true, ordine:30 },
-    { id:'14',  etichetta:'14',        mm:140, tondo:false, litriPerVaso:1.15, attiva:true, ordine:40 },
-    { id:'16',  etichetta:'16',        mm:160, tondo:false, litriPerVaso:1.70, attiva:true, ordine:50 },
-    { id:'18',  etichetta:'18',        mm:180, tondo:false, litriPerVaso:2.40, attiva:true, ordine:60 },
-    { id:'20',  etichetta:'20',        mm:200, tondo:false, litriPerVaso:3.30, attiva:true, ordine:70 },
-    { id:'22',  etichetta:'22',        mm:220, tondo:false, litriPerVaso:4.40, attiva:true, ordine:80 },
-    { id:'24',  etichetta:'24',        mm:240, tondo:false, litriPerVaso:5.70, attiva:true, ordine:90 },
+    { id:'VAS', etichetta:'vaschetta', mm: 60, tondo:false, litriPerVaso:0.10, attiva:true, ordine: 0, filoPerPianta:0    },
+    { id:'10T', etichetta:'10 tondo',  mm:100, tondo:true,  litriPerVaso:0.35, attiva:true, ordine:10, filoPerPianta:0.30 },
+    { id:'10Q', etichetta:'10 quadro', mm:100, tondo:false, litriPerVaso:0.45, attiva:true, ordine:20, filoPerPianta:0.30 },
+    { id:'12',  etichetta:'12',        mm:120, tondo:false, litriPerVaso:0.75, attiva:true, ordine:30, filoPerPianta:0.45 },
+    { id:'14',  etichetta:'14',        mm:140, tondo:false, litriPerVaso:1.15, attiva:true, ordine:40, filoPerPianta:0.60 },
+    { id:'16',  etichetta:'16',        mm:160, tondo:false, litriPerVaso:1.70, attiva:true, ordine:50, filoPerPianta:0.80 },
+    { id:'18',  etichetta:'18',        mm:180, tondo:false, litriPerVaso:2.40, attiva:true, ordine:60, filoPerPianta:1.00 },
+    { id:'20',  etichetta:'20',        mm:200, tondo:false, litriPerVaso:3.30, attiva:true, ordine:70, filoPerPianta:1.30 },
+    { id:'22',  etichetta:'22',        mm:220, tondo:false, litriPerVaso:4.40, attiva:true, ordine:80, filoPerPianta:1.60 },
+    { id:'24',  etichetta:'24',        mm:240, tondo:false, litriPerVaso:5.70, attiva:true, ordine:90, filoPerPianta:2.00 },
   ],
   materiali: [
     { id:'pomice',  nome:'Pomice',        prezzoLitro:0.45, attivo:true },
@@ -69,7 +69,7 @@ export const SEMI = {
     { id:'conc',    nome:'Concimazione',        chiede:'scelta', etichetta:'Tipo di concime',
       opzioni:[ { k:'Organico', matPerPianta:0.15, orePerPianta:0.020 },
                 { k:'Chimico',  matPerPianta:0.10, orePerPianta:0.015 } ] },
-    { id:'leg',     nome:'Legatura',            chiede:'fisso', matPerPianta:0.80, orePerPianta:0.25 },
+    { id:'leg',     nome:'Legatura',            chiede:'fisso', filoPerClasse:true, matPerPianta:0.80, orePerPianta:0.25 },
     { id:'tratt',   nome:'Trattamento',         chiede:'fisso', matPerPianta:0.06, orePerPianta:0.01 },
   ],
   variabili: [
@@ -96,13 +96,30 @@ export async function seminaConfig(){
   for (const t of TABELLE_CONFIG){
     if (await db[t].count() === 0) await db[t].bulkPut(SEMI[t]);
   }
-  /* Le impostazioni sono chiavi sciolte: una aggiunta in una versione
-     nuova non arriverebbe mai a chi ha già l'app. Si aggiungono quelle
-     che mancano, senza toccare i valori scelti dall'utente. */
+  await normalizzaConfig();
+  if (!(await db.meta.get('schema'))) await db.meta.put({ chiave:'schema', valore:SCHEMA });
+}
+
+/* Porta la configurazione alla forma di questa versione. Gira all'avvio
+   e dopo ogni import: un backup fatto con una versione vecchia deve
+   entrare senza buchi. Aggiunge soltanto quello che manca, non cambia
+   mai un valore già scelto. */
+export async function normalizzaConfig(){
+  /* le impostazioni sono chiavi sciolte: una nuova non arriverebbe mai
+     a chi ha già l'app installata */
   for (const s of SEMI.impostazioni)
     if (!(await db.impostazioni.get(s.chiave))) await db.impostazioni.put(s);
 
-  if (!(await db.meta.get('schema'))) await db.meta.put({ chiave:'schema', valore:SCHEMA });
+  /* 2.0 · il filo della legatura si paga per classe di vaso. Una classe
+     senza il valore riceve quello iniziale; la legatura che non ha mai
+     scelto passa al calcolo per classe. Chi lo spegne, lo trova spento. */
+  for (const c of await db.classi.toArray()){
+    if (c.filoPerPianta != null) continue;
+    const seme = SEMI.classi.find(x => x.id === c.id);
+    await db.classi.update(c.id, { filoPerPianta: seme ? seme.filoPerPianta : 0 });
+  }
+  const leg = await db.tipiIntervento.get('leg');
+  if (leg && leg.filoPerClasse == null) await db.tipiIntervento.update('leg', { filoPerClasse: true });
 }
 
 export async function apri(){
