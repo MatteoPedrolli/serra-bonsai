@@ -1,8 +1,8 @@
 /* VIVAIO · home — da qui si parte per tutto il resto.
    Nursery e produzione sono due posti diversi, anche se il modello dati
    non ha bisogno di saperlo: lo dice il vaso. § 11 */
-import { registra, vai, aperti, qta, esiste } from '../stato.js';
-import { disegna, testa, nascondiBarra } from '../ui.js';
+import { S, registra, vai, aperti, qta, esiste } from '../stato.js';
+import { disegna, testa, nascondiBarra, dataIT } from '../ui.js';
 
 registra('home', () => {
   const tutti = aperti();
@@ -23,7 +23,9 @@ registra('home', () => {
         <span class="z-t">Produzione<u>${produzione.length} gruppi · ${nLotti(produzione)} lotti</u></span>
         <b class="z-n">${piante(produzione)}<small>piante</small></b></button>
       ${esiste('intervento') ? '<button class="azione" data-v="intervento"><i>✂️</i>Intervento<u>su un gruppo o su tutti</u></button>' : ''}
-      ${esiste('inventario') ? '<button class="azione" data-v="inventario"><i>📋</i>Inventario<u>conta e convalida</u></button>' : ''}
+      ${esiste('inventario') ? `<button class="azione" data-v="inventario"><i>📋</i>Inventario<u>${
+          S.inventarioInCorso ? 'giro in corso · riprendi'
+          : S.ultimoInventario ? 'ultimo il ' + dataIT(S.ultimoInventario.slice(0, 10)) : 'mai fatto'}</u></button>` : ''}
       <button class="azione" data-v="analisi"><i>📊</i>Analisi<u>rese, costi, margini</u></button>
       <button class="azione" data-v="lotti"><i>🏷️</i>Lotti<u>anche quelli finiti</u></button>
       <button class="azione" data-v="config"><i>⚙️</i>Impostazioni<u>costi, miscele, copie</u></button>

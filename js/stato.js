@@ -17,6 +17,9 @@ export async function ricarica(){
     db.movimenti.toArray(), db.eventi.toArray(), db.conteggi.toArray(),
   ]);
   Object.assign(S, { cfg, lotti, gruppi, movimenti, eventi, conteggi });
+  const [inv, giro] = await Promise.all([db.meta.get('ultimoInventario'), db.meta.get('inventario')]);
+  S.ultimoInventario = inv ? inv.valore : null;
+  S.inventarioInCorso = giro ? giro.valore : null;
   S.q = C.saldi(movimenti);
   S.c = C.costi(movimenti, eventi, cfg.impostazioni.tariffaOraria);
   /* un gruppo con giacenza zero è chiuso: la cache in tabella si allinea

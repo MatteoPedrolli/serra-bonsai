@@ -17,12 +17,15 @@ import './viste/nuovoLotto.js';
 import './viste/config.js';
 import './viste/analisi.js';
 import './viste/intervento.js';
+import './viste/inventario.js';
 import { indietroPasso } from './viste/flusso.js';
 import { indietroIntervento } from './viste/intervento.js';
+import { indietroInventario } from './viste/inventario.js';
 
 $('btn-indietro').onclick = () => {
   if (nav.nome === 'flusso' && indietroPasso()) return;
   if (nav.nome === 'intervento' && indietroIntervento()) return;
+  if (nav.nome === 'inventario' && indietroInventario()) return;
   torna();
 };
 $('btn-cfg').onclick   = () => vai('config');
