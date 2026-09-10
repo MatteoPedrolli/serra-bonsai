@@ -7,6 +7,7 @@ import * as D from './drive.js';
 import { S, ricarica, radice, vai, torna, nav, imp } from './stato.js';
 import { $, e, brindisi } from './ui.js';
 
+import './viste/home.js';
 import './viste/elenco.js';
 import './viste/gruppo.js';
 import './viste/lotto.js';
@@ -62,7 +63,7 @@ try {
   /* prima di tutto: chiedere al browser di non buttare via l'archivio */
   spazio = await B.proteggiSpazio();
   await ricarica();
-  radice('elenco');
+  radice('home');
   await B.istantaneaGiornaliera();
   await promemoria();
   window.addEventListener('serra:scritto', promemoria);
@@ -83,7 +84,7 @@ try {
   console.error(err);
 }
 
-/* ---- PWA: in serra la rete non c'è ---- */
+/* ---- PWA: fra i bancali la rete non c'è ---- */
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').catch(() => {});
   /* la versione nuova entra in servizio: si riparte da capo una volta sola */

@@ -5,7 +5,7 @@
 import { db, oggi } from '../db.js';
 import * as O from '../operazioni.js';
 import * as C from '../calcoli.js';
-import { S, registra, vai, torna, radice, rendi, ricarica, gruppo, classe, lotto,
+import { S, registra, vai, torna, radice, rendi, ricarica, gruppo, classe, lotto, aZona, zonaDi,
          qta, costo, perPianta, imp, aperti, nomeGruppo } from '../stato.js';
 import { $, e, eur, num, dataIT, disegna, testa, vaso, barraTasti, brindisi, campoNum } from '../ui.js';
 
@@ -27,7 +27,7 @@ const miscelaCorrente = () => S.cfg.miscele.find(m => m.id === f.miscelaId) || n
 /* ---------- avvio ---------- */
 registra('flusso', ({ id, tipo }) => {
   const g = gruppo(id);
-  if (!g) return radice('elenco');
+  if (!g) return radice('home');
   if (!f || f.gruppo.id !== id || f.tipo !== tipo || f.finito) avvia(g, tipo);
   disegnaPasso();
 });
@@ -488,5 +488,5 @@ async function salva(piano, ripeti){
     }
     brindisi('Non ci sono altri gruppi in questo vaso');
   }
-  radice('elenco');
+  aZona(zonaDi(classeOrigine));
 }

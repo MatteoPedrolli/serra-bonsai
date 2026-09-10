@@ -295,3 +295,97 @@ body{background:var(--pomice);color:var(--inchiostro);font-family:var(--sans);
 /* ---- promemoria grave: lo spazio che il telefono può ripulire ---- */
 .promemoria.rosso{background:var(--ruggine-tenue);color:var(--ruggine);border-color:var(--ruggine)}
 .promemoria+.promemoria{margin-top:6px}
+
+/* =====================================================================
+   VIVAIO · stile morbido
+   Stessa identità del prototipo — stessi colori, stessi caratteri — con
+   gli spigoli arrotondati, i bordi d'inchiostro sostituiti da ombre
+   leggere e meno maiuscole urlate. Sta tutto qui in fondo: per tornare
+   allo stile di prima basta togliere questo blocco.
+   ===================================================================== */
+:root{
+  --pomice:#ECEAE3; --linea:#DEDBD2;
+  --r:14px; --r-s:10px;
+  --ombra:0 1px 2px rgba(25,30,26,.05), 0 3px 10px rgba(25,30,26,.05);
+  --ombra-su:0 2px 4px rgba(25,30,26,.07), 0 8px 22px rgba(25,30,26,.08);
+}
+body{background:var(--pomice)}
+.top{border-bottom:0;background:rgba(236,234,227,.92);backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px)}
+.marchio{letter-spacing:.08em}
+
+/* ---- carte e righe: niente bordo, un'ombra ---- */
+.elenco{gap:7px}
+.riga{border:0;border-radius:var(--r);box-shadow:var(--ombra);padding:12px 14px}
+.riga:active{background:var(--germoglio-tenue);box-shadow:none}
+.sep{border-bottom:0;padding:18px 4px 4px;margin-bottom:2px}
+.cifre{gap:8px}
+.cifra{border:0;border-radius:var(--r);box-shadow:var(--ombra)}
+.tabella,.registro,.storia,.mix{border:0;border-radius:var(--r);box-shadow:var(--ombra);overflow:hidden}
+.conta,.dest,.cfgriga{border:0;border-radius:var(--r);box-shadow:var(--ombra)}
+.cfgriga{margin-bottom:8px}
+
+/* ---- il vaso disegnato: più matita che china ---- */
+.vaso{border:1.5px solid #8C928B;border-radius:6px;background:var(--carta)}
+.vaso.tondo{border-radius:50%}
+.gradino{border:1.5px solid #8C928B;border-radius:8px}
+.gradino.tondo{border-radius:50% 50% 16% 16%}
+
+/* ---- tasti: arrotondati, in minuscolo ---- */
+.azione{border:0;border-radius:18px;box-shadow:var(--ombra);text-transform:none;
+  letter-spacing:.01em;font-size:17px;padding:18px 14px}
+.azione:active{box-shadow:none;transform:scale(.985)}
+.azione i{font-size:22px;width:40px;height:40px;border-radius:12px;display:grid;
+  place-items:center;background:var(--pomice)}
+.principale{border-radius:var(--r);text-transform:none;letter-spacing:.02em;font-size:17px;
+  box-shadow:0 4px 14px rgba(63,125,32,.28)}
+.principale[disabled]{box-shadow:none}
+.secondaria{border:0;border-radius:var(--r);text-transform:none;letter-spacing:.02em;
+  background:var(--carta);box-shadow:var(--ombra)}
+.mini{border-radius:999px;text-transform:none;letter-spacing:.01em;font-size:13.5px;
+  padding:8px 14px;border-color:var(--linea)}
+.tondino{border-radius:var(--r-s);border:0;background:var(--pomice)}
+.interr{border-radius:var(--r-s);border:0}
+.aggiungi{border-radius:var(--r);text-transform:none;letter-spacing:.02em;font-size:14.5px}
+.linkotto{text-transform:none;letter-spacing:.02em;font-size:14px;border-bottom-width:1px}
+.indietro{text-transform:none;letter-spacing:.02em;font-size:16px}
+.ordina{border-radius:var(--r-s);text-transform:none;letter-spacing:0}
+
+/* ---- campi ---- */
+.cerca,.campo input,.campo textarea,.campo select{border-radius:var(--r-s)}
+.cerca{border:0;box-shadow:var(--ombra)}
+.numerone{border:1.5px solid var(--linea);border-radius:12px;background:var(--pomice)}
+.dest .n,.quota,.cfgriga input[type=number]{border-radius:8px}
+.anteprima{border:0;border-radius:var(--r);box-shadow:var(--ombra)}
+
+/* ---- avvisi e messaggi ---- */
+.avviso,.resto,.esito,.promemoria{border-radius:var(--r-s)}
+.avviso,.resto,.promemoria{border-left-width:0}
+.brindisi{border-radius:999px;padding:12px 20px;box-shadow:var(--ombra-su)}
+.dialogo>div{border-top:0;border-radius:22px 22px 0 0}
+.barretta{border:0;border-radius:8px;overflow:hidden}
+.pallino{border-radius:50%}
+.eti b{border-radius:999px;padding:3px 8px}
+.pill{border-radius:999px}
+.totmix{border-top:1px solid var(--linea)}
+.tacca{border-radius:3px}
+.barra{background:linear-gradient(to top,var(--pomice) 70%,rgba(236,234,227,0))}
+
+/* ---- home ---- */
+.home{padding-top:14px}
+.home .azioni{gap:12px}
+.azione.zona{grid-column:span 2;padding:20px 18px;font-size:21px}
+.azione.zona[data-v="nursery"]{background:#EEF4E7}
+.azione.zona[data-v="nursery"] i{background:#DCEBCD}
+.azione.zona[data-v="produzione"]{background:#F6F1E6}
+.azione.zona[data-v="produzione"] i{background:#ECE2CC}
+.azione.zona u{font-size:13px}
+.azione u b{font-family:var(--mono);font-weight:600;color:var(--inchiostro)}
+.azione.zona{flex-direction:row;align-items:center;gap:14px;padding:16px 18px}
+.azione.zona i{width:48px;height:48px;font-size:26px;flex:none}
+.z-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;text-align:left}
+.z-n{font-family:var(--mono);font-size:28px;font-weight:600;text-align:right;line-height:1}
+.z-n small{display:block;font-family:var(--sans);font-size:11px;font-weight:500;
+  color:var(--fumo);margin-top:4px}
+.promemoria button{text-transform:none;letter-spacing:.01em;font-size:13.5px;
+  background:rgba(255,255,255,.55);border:0;border-radius:999px;padding:7px 13px}

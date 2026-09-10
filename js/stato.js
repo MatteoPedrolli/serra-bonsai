@@ -47,8 +47,9 @@ export const nomeGruppo = g => g.lotto + (g.suffisso ? ' · ' + g.suffisso : '')
 /* ---- navigazione ---- */
 const viste = {};
 export const registra = (nome, fn) => { viste[nome] = fn; };
+export const esiste = nome => !!viste[nome];
 
-export const nav = { nome: 'elenco', par: {}, pila: [] };
+export const nav = { nome: 'home', par: {}, pila: [] };
 
 export function vai(nome, par = {}){
   if (nav.nome) nav.pila.push({ nome: nav.nome, par: nav.par });
@@ -56,7 +57,19 @@ export function vai(nome, par = {}){
   rendi();
 }
 export function sostituisci(nome, par = {}){ nav.nome = nome; nav.par = par; rendi(); }
-export function radice(nome = 'elenco', par = {}){ nav.pila = []; nav.nome = nome; nav.par = par; rendi(); }
+export function radice(nome = 'home', par = {}){ nav.pila = []; nav.nome = nome; nav.par = par; rendi(); }
+
+/* Nursery e produzione non sono due stati della pianta: sono due
+   contenitori. In vaschetta è nursery, in vaso è produzione, e il
+   passaggio dall'una all'altra è il rinvaso. § 11 */
+export const zonaDi = classe => classe === 'VAS' ? 'nursery' : 'produzione';
+
+/* torna all'elenco di una zona, con la home come unico passo indietro */
+export function aZona(zona){
+  nav.pila = [{ nome: 'home', par: {} }];
+  nav.nome = 'elenco'; nav.par = { zona };
+  rendi();
+}
 export function torna(){
   const p = nav.pila.pop();
   if (!p) return radice();
@@ -64,6 +77,7 @@ export function torna(){
 }
 export function rendi(){
   window.scrollTo(0, 0);
+  if (!viste[nav.nome]){ nav.nome = 'home'; nav.par = {}; nav.pila = []; }
   viste[nav.nome](nav.par);
 }
 

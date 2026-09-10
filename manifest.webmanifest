@@ -1,13 +1,13 @@
 {
-  "name": "Serra — produzione bonsai",
-  "short_name": "Serra",
+  "name": "Vivaio — produzione bonsai",
+  "short_name": "Vivaio",
   "description": "Dalla talea alla vendita: lotti, gruppi, movimenti e costi.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#E4E2DA",
-  "theme_color": "#E4E2DA",
+  "background_color": "#ECEAE3",
+  "theme_color": "#ECEAE3",
   "lang": "it",
   "icons": [
     { "src": "icone/icona-192.png", "sizes": "192x192", "type": "image/png" },

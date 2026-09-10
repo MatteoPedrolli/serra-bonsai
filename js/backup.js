@@ -123,7 +123,7 @@ export function condivisioneDisponibile(){
 
 export async function condividi(copia){
   const { testo, nome, righe } = copia || await preparaCopia();
-  const etichetta = `Serra · ${righe} righe · ${new Date().toLocaleDateString('it-IT')}`;
+  const etichetta = `Vivaio · ${righe} righe · ${new Date().toLocaleDateString('it-IT')}`;
   let intoppo = null;
 
   if (navigator.share && navigator.canShare){

@@ -32,14 +32,14 @@ function storia(g){
 
 registra('gruppo', ({ id }) => {
   const g = gruppo(id);
-  if (!g) return vai('elenco');
+  if (!g) return vai('home');
   const cl = classe(g.classe), L = lotto(g.lotto), n = qta(g);
 
   testa({ titolo: g.aperto ? 'Gruppo' : 'Gruppo chiuso', indietro: true });
   nascondiBarra();
 
   const azioni = g.aperto ? `<div class="azioni">
-      <button class="azione" data-a="rinvaso"><i>🪴</i>Rinvaso<u>conta, smista, registra</u></button>
+      <button class="azione" data-a="rinvaso"><i>🌳</i>Rinvaso<u>conta, smista, registra</u></button>
       <button class="azione" data-a="conteggio"><i>🔢</i>Conteggio<u>aggiorna la giacenza</u></button>
       <button class="azione" data-a="vendita"><i>💰</i>Vendita<u>quantità e prezzo</u></button>
       <button class="azione" data-a="intervento"><i>✂️</i>Intervento<u>potatura, concime, filo…</u></button></div>`

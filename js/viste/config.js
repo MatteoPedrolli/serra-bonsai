@@ -12,7 +12,7 @@ let sezione = 'materiali', miscelaAperta = null;
 const salva = async (tab, riga) => { await db[tab].put(riga); await ricarica(); rendi(); };
 
 registra('config', () => {
-  testa({ titolo: 'Config', indietro: true });
+  testa({ titolo: 'Impostazioni', indietro: true });
   nascondiBarra();
   const corpo = { materiali: cfgMateriali, miscele: cfgMiscele, vasi: cfgVasi,
                   interventi: cfgInterventi, variabili: cfgVariabili, dati: cfgDati }[sezione]();
@@ -281,7 +281,7 @@ function cfgDati(){
     <div class="cfgtit" style="margin-top:22px">annulla · ${info.istantanee.length} istantanee</div>
     ${ist}
     <div class="nota">Non è un backup, è il tasto <i>annulla</i> dell'app: sta dentro l'archivio e
-      muore con lui. Serve quando sbagli qualcosa in serra e non hai rete, o quando la copia su
+      muore con lui. Serve quando sbagli qualcosa fra i bancali e non hai rete, o quando la copia su
       Drive è più vecchia del lavoro di stamattina. L'app ne prende una da sola ogni giorno, e
       sempre prima di un import o di un ripristino.</div>
 

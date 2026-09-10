@@ -1,12 +1,12 @@
 /* SERRA · service worker — in serra la rete non c'è.
    Cambia CACHE a ogni rilascio: il vecchio guscio viene buttato. */
-const CACHE = 'serra-v14';
+const CACHE = 'serra-v16';
 const GUSCIO = [
   '.', 'index.html', 'manifest.webmanifest', 'privacy.html', 'termini.html',
   'css/serra.css',
   'js/app.js', 'js/stato.js', 'js/ui.js', 'js/db.js', 'js/calcoli.js',
   'js/operazioni.js', 'js/backup.js', 'js/drive.js', 'js/vendor/dexie.mjs',
-  'js/viste/elenco.js', 'js/viste/gruppo.js', 'js/viste/lotto.js', 'js/viste/lotti.js',
+  'js/viste/home.js', 'js/viste/elenco.js', 'js/viste/gruppo.js', 'js/viste/lotto.js', 'js/viste/lotti.js',
   'js/viste/flusso.js', 'js/viste/nuovoLotto.js', 'js/viste/config.js', 'js/viste/analisi.js',
   'icone/icona.svg', 'icone/icona-192.png', 'icone/icona-512.png',
 ];
