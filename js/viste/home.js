@@ -33,6 +33,7 @@ registra('home', () => {
   document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
     const v = b.dataset.v;
     if (v === 'nursery' || v === 'produzione') return vai('elenco', { zona: v });
+    if (v === 'intervento') return vai('intervento', { nuovo: true });
     vai(v);
   });
 });

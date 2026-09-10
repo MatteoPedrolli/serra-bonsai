@@ -27,20 +27,20 @@ const miscelaCorrente = () => S.cfg.miscele.find(m => m.id === f.miscelaId) || n
 const miscele = () => S.cfg.miscele.filter(m => m.attiva !== false);
 
 /* ---------- avvio ---------- */
-registra('flusso', ({ id, tipo }) => {
+registra('flusso', ({ id, tipo, tipoInt }) => {
   const g = gruppo(id);
   if (!g) return radice('home');
-  if (!f || f.gruppo.id !== id || f.tipo !== tipo || f.finito) avvia(g, tipo);
+  if (!f || f.gruppo.id !== id || f.tipo !== tipo || f.finito) avvia(g, tipo, tipoInt);
   disegnaPasso();
 });
 
-function avvia(g, tipo){
+function avvia(g, tipo, tipoInt){
   const n = qta(g);
   const mis = miscele().find(m => m.id === ultimaMiscela) || miscele()[0];
   f = { tipo, gruppo: g, attese: n, contate: n, dest: {},
         miscelaId: mis?.id || null, quote: { ...(ultimeQuote || mis?.quote || {}) },
         costoVasi: 0, ore: ultimeOre || 0, note: '', vigore: 0,
-        prezzo: 0, vend: n, tipoInt: S.cfg.tipiIntervento[0]?.id, scelta: null,
+        prezzo: 0, vend: n, tipoInt: tipoInt || S.cfg.tipiIntervento[0]?.id, scelta: null,
         oreTocco: false, matTocco: false, materiali: 0, unisci: {}, data: oggi() };
   if (tipo === 'rinvaso') f.dest[prossimaClasse(g.classe)] = n;
   if (tipo === 'intervento') f.scelta = tipoDi()?.opzioni?.[0]?.k || null;
